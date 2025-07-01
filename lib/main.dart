@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'pages/find_food.dart'; // Adjust the path if needed
+import 'pages/find_food.dart';
+import 'pages/donate.dart';
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -105,7 +106,9 @@ class WebHeader extends StatelessWidget {
               WebNavButton(
                 'Donate',
                 onPressed: () {
-                  // Implement Donate navigation here
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const DonatePage()),
+                  );
                 },
               ),
               WebNavButton(
