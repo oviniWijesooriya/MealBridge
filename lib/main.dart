@@ -716,7 +716,14 @@ class MealBridgeMobileApp extends StatelessWidget {
         fontFamily: 'Segoe UI',
         scaffoldBackgroundColor: Color(0xFFF5F5F5),
       ),
-      home: MealBridgeMobileHomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => MealBridgeMobileHomePage(),
+        '/find-food': (context) => FindFoodPage(),
+        '/donate': (context) => DonatePage(),
+        '/impact': (context) => ImpactPage(),
+        '/login': (context) => LoginPage(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }
@@ -727,9 +734,16 @@ class MealBridgeMobileHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xFF009933),
         title: Row(
           children: [
-            Text('Meal', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Meal',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             Text(
               'Bridge',
               style: TextStyle(
@@ -738,11 +752,26 @@ class MealBridgeMobileHomePage extends StatelessWidget {
               ),
             ),
             SizedBox(width: 8),
-            Text('Sri Lanka', style: TextStyle(fontSize: 14)),
+            Text(
+              'Sri Lanka',
+              style: TextStyle(fontSize: 14, color: Colors.white),
+            ),
           ],
         ),
-        actions: [IconButton(icon: Icon(Icons.menu), onPressed: () {})],
+        actions: [
+          Builder(
+            builder:
+                (context) => IconButton(
+                  icon: Icon(Icons.menu, color: Colors.white),
+                  onPressed: () {
+                    Scaffold.of(context).openEndDrawer();
+                  },
+                ),
+          ),
+        ],
+        automaticallyImplyLeading: false, // Removes default left hamburger
       ),
+      endDrawer: MobileNavDrawer(), // Use endDrawer for right-side drawer
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
@@ -757,6 +786,97 @@ class MealBridgeMobileHomePage extends StatelessWidget {
           MobileLeaderboardSection(),
           SizedBox(height: 20),
           MobileFooterSection(),
+        ],
+      ),
+    );
+  }
+}
+
+class MobileNavDrawer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: Color(0xFF009933)),
+            child: Row(
+              children: [
+                Text(
+                  'Meal',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Bridge',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFF9E1B),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Sri Lanka',
+                  style: TextStyle(fontSize: 14, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.home, color: Color(0xFF009933)),
+            title: Text('Home'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed('/');
+              });
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.restaurant, color: Color(0xFF009933)),
+            title: Text('Find Food'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed('/find-food');
+              });
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.volunteer_activism, color: Color(0xFF009933)),
+            title: Text('Donate'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed('/donate');
+              });
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.emoji_events, color: Color(0xFF009933)),
+            title: Text('Impact'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed('/impact');
+              });
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.login, color: Color(0xFF009933)),
+            title: Text('Login'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Future.delayed(Duration(milliseconds: 100), () {
+                Navigator.of(context).pushReplacementNamed('/login');
+              });
+            },
+          ),
         ],
       ),
     );
