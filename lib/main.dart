@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'pages/find_food.dart';
 import 'pages/donate.dart';
 
 void main() {
+  usePathUrlStrategy();
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
 }
 
@@ -20,7 +22,14 @@ class MealBridgeWebApp extends StatelessWidget {
         fontFamily: 'Segoe UI',
         scaffoldBackgroundColor: Color(0xFFF5F5F5),
       ),
-      home: MealBridgeWebHomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => MealBridgeWebHomePage(),
+        '/find-food': (context) => FindFoodPage(),
+        '/donate': (context) => DonatePage(),
+        // '/impact': (context) => ImpactPage(),
+        // '/login': (context) => LoginPage(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }
@@ -85,42 +94,32 @@ class WebHeader extends StatelessWidget {
               WebNavButton(
                 'Home',
                 onPressed: () {
-                  // Optionally, implement home navigation
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => MealBridgeWebHomePage(),
-                    ),
-                  );
+                  Navigator.of(context).pushReplacementNamed('/');
                 },
               ),
               WebNavButton(
                 'Find Food',
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const FindFoodPage(),
-                    ),
-                  );
+                  Navigator.of(context).pushReplacementNamed('/find-food');
                 },
               ),
+
               WebNavButton(
                 'Donate',
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const DonatePage()),
-                  );
+                  Navigator.of(context).pushReplacementNamed('/donate');
                 },
               ),
               WebNavButton(
                 'Impact',
                 onPressed: () {
-                  // Implement Impact navigation here
+                  Navigator.of(context).pushReplacementNamed('/impact');
                 },
               ),
               WebNavButton(
                 'Login',
                 onPressed: () {
-                  // Implement Login navigation here
+                  Navigator.of(context).pushReplacementNamed('/login');
                 },
               ),
             ],
