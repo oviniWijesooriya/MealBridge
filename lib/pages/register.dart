@@ -3,25 +3,27 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({Key? key}) : super(key: key);
+// Import MobileNavDrawer if it's in another file, or place it here if needed.
+
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return kIsWeb ? LoginWeb() : LoginMobile();
+    return kIsWeb ? RegisterWeb() : RegisterMobile();
   }
 }
 
 // =====================
 // WEB VERSION
 // =====================
-class LoginWeb extends StatelessWidget {
+class RegisterWeb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ListView(
         children: [
-          WebHeader(),
+          WebHeader(), // Use your existing WebHeader widget
           Center(
             child: Container(
               constraints: BoxConstraints(maxWidth: 400),
@@ -32,7 +34,7 @@ class LoginWeb extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12)],
               ),
-              child: LoginFormWeb(),
+              child: RegisterFormWeb(),
             ),
           ),
         ],
@@ -41,14 +43,14 @@ class LoginWeb extends StatelessWidget {
   }
 }
 
-class LoginFormWeb extends StatefulWidget {
+class RegisterFormWeb extends StatefulWidget {
   @override
-  State<LoginFormWeb> createState() => _LoginFormWebState();
+  State<RegisterFormWeb> createState() => _RegisterFormWebState();
 }
 
-class _LoginFormWebState extends State<LoginFormWeb> {
+class _RegisterFormWebState extends State<RegisterFormWeb> {
   final _formKey = GlobalKey<FormState>();
-  String? email, password, role;
+  String? name, email, password, role;
   bool _obscure = true;
 
   @override
@@ -59,7 +61,7 @@ class _LoginFormWebState extends State<LoginFormWeb> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Login to MealBridge',
+            'Register for MealBridge',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -68,6 +70,12 @@ class _LoginFormWebState extends State<LoginFormWeb> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 24),
+          TextFormField(
+            decoration: InputDecoration(labelText: 'Full Name'),
+            onSaved: (v) => name = v,
+            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+          ),
+          SizedBox(height: 16),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(labelText: 'Role'),
             value: role,
@@ -108,14 +116,14 @@ class _LoginFormWebState extends State<LoginFormWeb> {
             onPressed: () {
               if (_formKey.currentState!.validate()) {
                 _formKey.currentState!.save();
-                // TODO: Implement authentication logic
+                // TODO: Implement registration logic
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Logged in as $role')));
+                ).showSnackBar(SnackBar(content: Text('Registered as $role')));
               }
             },
             child: Text(
-              'Login',
+              'Register',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -125,9 +133,9 @@ class _LoginFormWebState extends State<LoginFormWeb> {
           SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/register');
+              Navigator.of(context).pushReplacementNamed('/login');
             },
-            child: Text('Don\'t have an account? Register'),
+            child: Text('Already have an account? Login'),
           ),
         ],
       ),
@@ -138,7 +146,7 @@ class _LoginFormWebState extends State<LoginFormWeb> {
 // =====================
 // MOBILE VERSION
 // =====================
-class LoginMobile extends StatelessWidget {
+class RegisterMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,20 +191,20 @@ class LoginMobile extends StatelessWidget {
       endDrawer: MobileNavDrawer(),
       body: ListView(
         padding: EdgeInsets.all(24),
-        children: [LoginFormMobile()],
+        children: [RegisterFormMobile()],
       ),
     );
   }
 }
 
-class LoginFormMobile extends StatefulWidget {
+class RegisterFormMobile extends StatefulWidget {
   @override
-  State<LoginFormMobile> createState() => _LoginFormMobileState();
+  State<RegisterFormMobile> createState() => _RegisterFormMobileState();
 }
 
-class _LoginFormMobileState extends State<LoginFormMobile> {
+class _RegisterFormMobileState extends State<RegisterFormMobile> {
   final _formKey = GlobalKey<FormState>();
-  String? email, password, role;
+  String? name, email, password, role;
   bool _obscure = true;
 
   @override
@@ -207,7 +215,7 @@ class _LoginFormMobileState extends State<LoginFormMobile> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Login to MealBridge',
+            'Register for MealBridge',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -216,6 +224,12 @@ class _LoginFormMobileState extends State<LoginFormMobile> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 20),
+          TextFormField(
+            decoration: InputDecoration(labelText: 'Full Name'),
+            onSaved: (v) => name = v,
+            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+          ),
+          SizedBox(height: 12),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(labelText: 'Role'),
             value: role,
@@ -256,14 +270,14 @@ class _LoginFormMobileState extends State<LoginFormMobile> {
             onPressed: () {
               if (_formKey.currentState!.validate()) {
                 _formKey.currentState!.save();
-                // TODO: Implement authentication logic
+                // TODO: Implement registration logic
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Logged in as $role')));
+                ).showSnackBar(SnackBar(content: Text('Registered as $role')));
               }
             },
             child: Text(
-              'Login',
+              'Register',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -273,9 +287,9 @@ class _LoginFormMobileState extends State<LoginFormMobile> {
           SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/register');
+              Navigator.of(context).pushReplacementNamed('/login');
             },
-            child: Text('Don\'t have an account? Register'),
+            child: Text('Already have an account? Login'),
           ),
         ],
       ),

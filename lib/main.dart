@@ -6,6 +6,7 @@ import 'pages/donate.dart';
 import 'pages/impact.dart';
 import 'pages/login.dart';
 import 'widgets/mobile_nav_drawer.dart';
+import 'pages/register.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -32,6 +33,7 @@ class MealBridgeWebApp extends StatelessWidget {
         '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -724,6 +726,7 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
       },
       debugShowCheckedModeBanner: false,
     );
