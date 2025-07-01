@@ -149,7 +149,7 @@ class DonateMobile extends StatelessWidget {
             ),
           ],
         ),
-        automaticallyImplyLeading: false, // Removes default left hamburger
+        automaticallyImplyLeading: false,
         actions: [
           Builder(
             builder:
@@ -187,7 +187,6 @@ class DonateMobile extends StatelessWidget {
   }
 }
 
-// Place this widget in your codebase (once, and reuse for all mobile pages)
 class MobileNavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

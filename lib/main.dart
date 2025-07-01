@@ -769,9 +769,9 @@ class MealBridgeMobileHomePage extends StatelessWidget {
                 ),
           ),
         ],
-        automaticallyImplyLeading: false, // Removes default left hamburger
+        automaticallyImplyLeading: false,
       ),
-      endDrawer: MobileNavDrawer(), // Use endDrawer for right-side drawer
+      endDrawer: MobileNavDrawer(),
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [

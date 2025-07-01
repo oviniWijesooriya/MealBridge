@@ -207,7 +207,7 @@ class ImpactMobile extends StatelessWidget {
             ),
           ],
         ),
-        automaticallyImplyLeading: false, // Remove default hamburger on left
+        automaticallyImplyLeading: false,
         actions: [
           Builder(
             builder:
@@ -251,7 +251,6 @@ class ImpactMobile extends StatelessWidget {
   }
 }
 
-// Place this widget once in your codebase and reuse for all mobile pages
 class MobileNavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

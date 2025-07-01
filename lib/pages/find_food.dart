@@ -211,7 +211,7 @@ class FindFoodMobile extends StatelessWidget {
           ],
         ),
         backgroundColor: Color(0xFF009933),
-        automaticallyImplyLeading: false, // Removes left hamburger
+        automaticallyImplyLeading: false,
         actions: [
           Builder(
             builder:
@@ -224,7 +224,7 @@ class FindFoodMobile extends StatelessWidget {
           ),
         ],
       ),
-      endDrawer: MobileNavDrawer(), // Drawer slides from the right
+      endDrawer: MobileNavDrawer(),
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
@@ -267,7 +267,6 @@ class FindFoodMobile extends StatelessWidget {
   }
 }
 
-// Add this widget somewhere in your codebase (e.g., main.dart or widgets/mobile_nav_drawer.dart)
 class MobileNavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
