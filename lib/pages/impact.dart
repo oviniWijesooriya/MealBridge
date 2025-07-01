@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import '../main.dart'; // For WebHeader, WebNavButton, and navigation
+import '../main.dart';
 
 class ImpactPage extends StatelessWidget {
   const ImpactPage({Key? key}) : super(key: key);

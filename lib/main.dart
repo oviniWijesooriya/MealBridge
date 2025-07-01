@@ -4,6 +4,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'pages/find_food.dart';
 import 'pages/donate.dart';
 import 'pages/impact.dart';
+import 'pages/login.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -29,7 +30,7 @@ class MealBridgeWebApp extends StatelessWidget {
         '/find-food': (context) => FindFoodPage(),
         '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
-        // '/login': (context) => LoginPage(),
+        '/login': (context) => LoginPage(),
       },
       debugShowCheckedModeBanner: false,
     );
