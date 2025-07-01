@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'pages/find_food.dart'; // Adjust the path if needed
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -80,11 +81,45 @@ class WebHeader extends StatelessWidget {
           ),
           Row(
             children: [
-              WebNavButton('Home'),
-              WebNavButton('Find Food'),
-              WebNavButton('Donate'),
-              WebNavButton('Impact'),
-              WebNavButton('Login'),
+              WebNavButton(
+                'Home',
+                onPressed: () {
+                  // Optionally, implement home navigation
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => MealBridgeWebHomePage(),
+                    ),
+                  );
+                },
+              ),
+              WebNavButton(
+                'Find Food',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const FindFoodPage(),
+                    ),
+                  );
+                },
+              ),
+              WebNavButton(
+                'Donate',
+                onPressed: () {
+                  // Implement Donate navigation here
+                },
+              ),
+              WebNavButton(
+                'Impact',
+                onPressed: () {
+                  // Implement Impact navigation here
+                },
+              ),
+              WebNavButton(
+                'Login',
+                onPressed: () {
+                  // Implement Login navigation here
+                },
+              ),
             ],
           ),
         ],
@@ -95,14 +130,15 @@ class WebHeader extends StatelessWidget {
 
 class WebNavButton extends StatelessWidget {
   final String label;
-  WebNavButton(this.label);
+  final VoidCallback onPressed;
+  WebNavButton(this.label, {required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: TextButton(
-        onPressed: () {},
+        onPressed: onPressed,
         child: Text(
           label,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
