@@ -13,14 +13,21 @@ class _CommunityAgreementPageState extends State<CommunityAgreementPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Optionally retrieve donor name from previous arguments if you have it
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final donorName = args?['donorName'] ?? 'Donor';
+
     final content = _CommunityAgreementContent(
       agreed: agreed,
-      onChanged: (v) => setState(() => agreed = v ?? false), // <-- FIXED
+      onChanged: (v) => setState(() => agreed = v ?? false),
       onProceed:
           agreed
               ? () {
-                // TODO: Create account in backend/Firebase
-                Navigator.of(context).pushReplacementNamed('/donor-welcome');
+                // Pass donor name to welcome page if available
+                Navigator.of(context).pushReplacementNamed(
+                  '/donor-welcome',
+                  arguments: {'donorName': donorName},
+                );
               }
               : null,
     );
@@ -57,7 +64,7 @@ class _CommunityAgreementPageState extends State<CommunityAgreementPage> {
 
 class _CommunityAgreementContent extends StatelessWidget {
   final bool agreed;
-  final ValueChanged<bool?> onChanged; // <-- FIXED TYPE
+  final ValueChanged<bool?> onChanged;
   final VoidCallback? onProceed;
 
   const _CommunityAgreementContent({
