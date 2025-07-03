@@ -21,7 +21,7 @@ class LoginWeb extends StatelessWidget {
     return Scaffold(
       body: ListView(
         children: [
-          WebHeader(),
+          MealBridgeHeader(isWeb: true),
           Center(
             child: Container(
               constraints: BoxConstraints(maxWidth: 400),
@@ -146,6 +146,7 @@ class LoginMobile extends StatelessWidget {
         backgroundColor: Color(0xFF009933),
         title: Row(
           children: [
+            MealBridgeHeader(isWeb: false),
             Text(
               'Meal',
               style: TextStyle(

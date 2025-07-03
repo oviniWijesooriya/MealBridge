@@ -21,7 +21,7 @@ class DonateWeb extends StatelessWidget {
     return Scaffold(
       body: ListView(
         children: [
-          WebHeader(),
+          MealBridgeHeader(isWeb: true),
           Container(
             constraints: BoxConstraints(maxWidth: 900),
             padding: EdgeInsets.symmetric(horizontal: 80, vertical: 40),
@@ -129,6 +129,7 @@ class DonateMobile extends StatelessWidget {
         backgroundColor: Color(0xFF009933),
         title: Row(
           children: [
+            MealBridgeHeader(isWeb: false),
             Text(
               'Meal',
               style: TextStyle(
