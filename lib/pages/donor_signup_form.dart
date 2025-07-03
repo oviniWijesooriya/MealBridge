@@ -359,7 +359,13 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               padding: EdgeInsets.symmetric(vertical: 16),
               textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            onPressed: widget.onSubmit,
+            onPressed: () {
+              if (widget.formKey.currentState!.validate()) {
+                widget.formKey.currentState!.save();
+                // TODO: Submit registration data here (e.g., to Firebase)
+                Navigator.of(context).pushReplacementNamed('/agreement');
+              }
+            },
             child: Text("Submit", style: TextStyle(color: Colors.white)),
           ),
         ],
