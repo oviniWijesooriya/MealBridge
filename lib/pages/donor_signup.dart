@@ -76,7 +76,10 @@ class DonorSignUpWeb extends StatelessWidget {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1A75BB),
-                        padding: EdgeInsets.symmetric(vertical: 20),
+                        padding: EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
                         textStyle: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

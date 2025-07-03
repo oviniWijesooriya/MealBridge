@@ -22,7 +22,7 @@ class MealBridgeHeader extends StatelessWidget {
     if (isWeb) {
       return Container(
         color: Color(0xFF009933),
-        padding: EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+        padding: EdgeInsets.symmetric(vertical: 13, horizontal: 40),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
