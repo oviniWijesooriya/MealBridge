@@ -84,11 +84,45 @@ class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
       passwordController: _passwordController,
       onPasswordChanged: _checkPasswordStrength,
       passwordStrength: passwordStrength,
+      // Pass callbacks to update the parent state
+      onOrgNameSaved: (v) => organizationName = v,
+      onRespNameSaved: (v) => responsibleName = v,
+      onEventNameSaved: (v) => eventName = v,
       onSubmit: () {
         if (_formKey.currentState!.validate()) {
           _formKey.currentState!.save();
-          // TODO: Submit data to backend or Firebase
-          Navigator.of(context).pushReplacementNamed('/agreement');
+          // Choose the correct donor name based on donor type
+          String donorName = '';
+          if (isBusiness) {
+            donorName =
+                organizationName?.trim().isNotEmpty == true
+                    ? organizationName!
+                    : (responsibleName?.trim().isNotEmpty == true
+                        ? responsibleName!
+                        : 'Donor');
+          } else if (isHousehold) {
+            donorName =
+                responsibleName?.trim().isNotEmpty == true
+                    ? responsibleName!
+                    : 'Donor';
+          } else if (isSpecialOccasion) {
+            donorName =
+                eventName?.trim().isNotEmpty == true
+                    ? eventName!
+                    : (responsibleName?.trim().isNotEmpty == true
+                        ? responsibleName!
+                        : 'Donor');
+          } else {
+            donorName =
+                responsibleName?.trim().isNotEmpty == true
+                    ? responsibleName!
+                    : 'Donor';
+          }
+          // Pass donorName to agreement page
+          Navigator.of(context).pushReplacementNamed(
+            '/agreement',
+            arguments: {'donorName': donorName},
+          );
         }
       },
     );
@@ -133,6 +167,9 @@ class _DonorSignUpFormContent extends StatefulWidget {
   final TextEditingController passwordController;
   final void Function(String) onPasswordChanged;
   final double passwordStrength;
+  final void Function(String?)? onOrgNameSaved;
+  final void Function(String?)? onRespNameSaved;
+  final void Function(String?)? onEventNameSaved;
   final VoidCallback onSubmit;
 
   const _DonorSignUpFormContent({
@@ -145,6 +182,9 @@ class _DonorSignUpFormContent extends StatefulWidget {
     required this.passwordController,
     required this.onPasswordChanged,
     required this.passwordStrength,
+    this.onOrgNameSaved,
+    this.onRespNameSaved,
+    this.onEventNameSaved,
     required this.onSubmit,
   });
 
@@ -186,28 +226,28 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               label: "Name of Organization *",
               hint: "e.g., Sunshine Bakery",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: widget.onOrgNameSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Business Registration Number",
               hint: "Optional",
               validator: null,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Responsible Person’s Name *",
               hint: "e.g., Mr. Perera",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: widget.onRespNameSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Position/Role *",
               hint: "e.g., Owner, Manager",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
             SizedBox(height: 14),
             _buildTextField(
@@ -215,21 +255,21 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Business Address *",
               hint: "e.g., 123 Main Street, Kandy",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
           ] else if (widget.isHousehold) ...[
             _buildTextField(
               label: "Responsible Person’s Name *",
               hint: "e.g., Mrs. Silva",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: widget.onRespNameSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
@@ -237,28 +277,28 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Home Address *",
               hint: "e.g., 456 Lake Road, Colombo",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
           ] else if (widget.isSpecialOccasion) ...[
             _buildTextField(
               label: "Event/Occasion Name *",
               hint: "e.g., Wedding, Almsgiving",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: widget.onEventNameSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Organizer’s Name *",
               hint: "e.g., Mr. Fernando",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: widget.onRespNameSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
@@ -266,14 +306,14 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Event Address/Location *",
               hint: "e.g., Temple Road, Galle",
               validator: _requiredValidator,
-              onSaved: (v) => {},
+              onSaved: null,
             ),
           ],
           // Common fields
@@ -283,14 +323,14 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
             hint: "e.g., donor@email.com",
             keyboardType: TextInputType.emailAddress,
             validator: _requiredValidator,
-            onSaved: (v) => {},
+            onSaved: null,
           ),
           SizedBox(height: 14),
           _buildTextField(
             label: "Username *",
             hint: "Choose a username",
             validator: _requiredValidator,
-            onSaved: (v) => {},
+            onSaved: null,
           ),
           SizedBox(height: 14),
           // Password with strength indicator
@@ -316,7 +356,7 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
                             ? "Password must be at least 8 characters"
                             : null),
             onChanged: widget.onPasswordChanged,
-            onSaved: (v) => {},
+            onSaved: null,
           ),
           SizedBox(height: 6),
           LinearProgressIndicator(
@@ -350,7 +390,7 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
                 return "Passwords do not match";
               return null;
             },
-            onSaved: (v) => {},
+            onSaved: null,
           ),
           SizedBox(height: 24),
           ElevatedButton(
