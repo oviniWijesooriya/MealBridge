@@ -169,7 +169,7 @@ class DonorSignUpMobile extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed('/donor_type_selection');
+                  ).pushReplacementNamed('/donor-type-selection');
                 },
               ),
               SizedBox(height: 16),
