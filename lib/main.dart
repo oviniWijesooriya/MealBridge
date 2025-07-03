@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'pages/find_food.dart';
-import 'pages/donate.dart';
+// import 'pages/donate.dart';
 import 'pages/impact.dart';
 import 'pages/login.dart';
+import 'pages/donor_signup_form.dart';
+import 'pages/donor_signup.dart';
 import 'widgets/mobile_nav_drawer.dart';
+import 'pages/donor_type_selection.dart';
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -20,7 +23,7 @@ class MealBridgeHeader extends StatelessWidget {
     if (isWeb) {
       return Container(
         color: Color(0xFF009933),
-        padding: EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+        padding: EdgeInsets.symmetric(vertical: 13, horizontal: 40),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -132,9 +135,12 @@ class MealBridgeWebApp extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
-        '/donate': (context) => DonatePage(),
+        // '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => DonorSignUpFormPage(),
+        '/donate': (context) => DonorSignUpPage(),
+        '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -151,16 +157,17 @@ class MealBridgeMobileApp extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
-        '/donate': (context) => DonatePage(),
+        '/donate': (context) => DonorSignUpPage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => DonorSignUpFormPage(),
+        '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// Home page (redesign this according to your PDF spec)
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -172,14 +179,13 @@ class HomePage extends StatelessWidget {
       endDrawer: MobileNavDrawer(),
       body: ListView(
         children: [
-          // Hero Section (redesign this for your PDF spec)
           Stack(
             children: [
               Container(
                 height: kIsWeb ? 400 : 200,
                 width: double.infinity,
                 child: Image.asset(
-                  'assets/hero_sri_lanka.jpg', // Replace with your actual image asset
+                  'assets/hero_sri_lanka.jpg',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -275,7 +281,7 @@ class HomePage extends StatelessWidget {
                     ),
           ),
           SizedBox(height: kIsWeb ? 60 : 28),
-          // Optional Impact Section
+          // Impact Section
           Padding(
             padding: EdgeInsets.symmetric(horizontal: kIsWeb ? 80 : 16),
             child:
