@@ -4,7 +4,7 @@ import 'pages/find_food.dart';
 // import 'pages/donate.dart';
 import 'pages/impact.dart';
 import 'pages/login.dart';
-import 'pages/register.dart';
+import 'pages/donor_signup_form.dart';
 import 'pages/donor_signup.dart';
 import 'widgets/mobile_nav_drawer.dart';
 import 'pages/donor_type_selection.dart';
@@ -138,7 +138,7 @@ class MealBridgeWebApp extends StatelessWidget {
         // '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
+        '/register': (context) => DonorSignUpFormPage(),
         '/donate': (context) => DonorSignUpPage(),
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
@@ -160,7 +160,7 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/donate': (context) => DonorSignUpPage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
+        '/register': (context) => DonorSignUpFormPage(),
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
       debugShowCheckedModeBanner: false,

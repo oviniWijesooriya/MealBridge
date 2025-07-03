@@ -54,10 +54,12 @@ class _DonorTypeSelectionPageState extends State<DonorTypeSelectionPage> {
           onNext:
               selectedIndex != null
                   ? () {
-                    // Pass the selected type to the next page as needed
                     Navigator.of(context).pushReplacementNamed(
                       '/register',
-                      arguments: donorTypes[selectedIndex!].title,
+                      arguments: {
+                        'type': donorTypes[selectedIndex!].title,
+                        'icon': donorTypes[selectedIndex!].icon,
+                      },
                     );
                   }
                   : null,
@@ -71,7 +73,10 @@ class _DonorTypeSelectionPageState extends State<DonorTypeSelectionPage> {
                   ? () {
                     Navigator.of(context).pushReplacementNamed(
                       '/register',
-                      arguments: donorTypes[selectedIndex!].title,
+                      arguments: {
+                        'type': donorTypes[selectedIndex!].title,
+                        'icon': donorTypes[selectedIndex!].icon,
+                      },
                     );
                   }
                   : null,
@@ -151,7 +156,7 @@ class _DonorTypeSelectionWeb extends StatelessWidget {
                         crossAxisCount: crossAxisCount,
                         mainAxisSpacing: 32,
                         crossAxisSpacing: 32,
-                        childAspectRatio: 1.4,
+                        childAspectRatio: 1.4, // Wider, less tall cards
                       ),
                       itemBuilder:
                           (context, i) => _DonorTypeCard(
@@ -279,55 +284,51 @@ class _DonorTypeCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
         width: width,
-        padding: EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Color(0xFF009933) : Colors.grey.shade300,
-            width: isSelected ? 3 : 1.5,
+            width: isSelected ? 2.5 : 1,
           ),
           boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: Color(0xFF009933).withOpacity(0.15),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 6,
+              blurRadius: 4,
               offset: Offset(0, 2),
             ),
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               data.icon,
-              size: 40,
+              size: 32,
               color: isSelected ? Color(0xFF009933) : Colors.black54,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 10),
             Text(
               data.title,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF006622),
+                color: Color(0xFF009933),
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              data.description,
-              style: TextStyle(fontSize: 14, color: Colors.black87),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
             Text(
+              data.description,
+              style: TextStyle(fontSize: 13.5, color: Colors.black87),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 6),
+            Text(
               data.example,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11.5,
                 color: Colors.black54,
                 fontStyle: FontStyle.italic,
               ),
