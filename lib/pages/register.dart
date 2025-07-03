@@ -23,7 +23,7 @@ class RegisterWeb extends StatelessWidget {
     return Scaffold(
       body: ListView(
         children: [
-          WebHeader(), // Use your existing WebHeader widget
+          MealBridgeHeader(isWeb: true), // Use your existing WebHeader widget
           Center(
             child: Container(
               constraints: BoxConstraints(maxWidth: 400),
@@ -154,6 +154,7 @@ class RegisterMobile extends StatelessWidget {
         backgroundColor: Color(0xFF009933),
         title: Row(
           children: [
+            MealBridgeHeader(isWeb: false),
             Text(
               'Meal',
               style: TextStyle(

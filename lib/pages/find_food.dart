@@ -20,7 +20,7 @@ class FindFoodWeb extends StatelessWidget {
     return Scaffold(
       body: ListView(
         children: [
-          WebHeader(),
+          MealBridgeHeader(isWeb: true),
           Container(
             constraints: BoxConstraints(maxWidth: 1100),
             padding: EdgeInsets.symmetric(horizontal: 80, vertical: 40),
@@ -199,6 +199,7 @@ class FindFoodMobile extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
+            MealBridgeHeader(isWeb: false),
             Text('Meal', style: TextStyle(fontWeight: FontWeight.bold)),
             Text(
               'Bridge',
