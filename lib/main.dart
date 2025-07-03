@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'pages/find_food.dart';
-import 'pages/donate.dart';
+// import 'pages/donate.dart';
 import 'pages/impact.dart';
 import 'pages/login.dart';
+import 'pages/register.dart';
+import 'pages/donor_signup.dart';
 import 'widgets/mobile_nav_drawer.dart';
 
 void main() {
@@ -132,9 +134,11 @@ class MealBridgeWebApp extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
-        '/donate': (context) => DonatePage(),
+        // '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
+        '/donate': (context) => DonorSignUpPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -151,16 +155,16 @@ class MealBridgeMobileApp extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
-        '/donate': (context) => DonatePage(),
+        '/donate': (context) => DonorSignUpPage(),
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
       },
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// Home page (redesign this according to your PDF spec)
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -172,14 +176,13 @@ class HomePage extends StatelessWidget {
       endDrawer: MobileNavDrawer(),
       body: ListView(
         children: [
-          // Hero Section (redesign this for your PDF spec)
           Stack(
             children: [
               Container(
                 height: kIsWeb ? 400 : 200,
                 width: double.infinity,
                 child: Image.asset(
-                  'assets/hero_sri_lanka.jpg', // Replace with your actual image asset
+                  'assets/hero_sri_lanka.jpg',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -275,7 +278,7 @@ class HomePage extends StatelessWidget {
                     ),
           ),
           SizedBox(height: kIsWeb ? 60 : 28),
-          // Optional Impact Section
+          // Impact Section
           Padding(
             padding: EdgeInsets.symmetric(horizontal: kIsWeb ? 80 : 16),
             child:
