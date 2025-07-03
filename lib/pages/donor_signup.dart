@@ -67,7 +67,9 @@ class DonorSignUpWeb extends StatelessWidget {
                         style: TextStyle(color: Colors.white),
                       ),
                       onPressed: () {
-                        Navigator.of(context).pushReplacementNamed('/register');
+                        Navigator.of(
+                          context,
+                        ).pushReplacementNamed('/donor-type-selection');
                       },
                     ),
                   ),
@@ -165,7 +167,9 @@ class DonorSignUpMobile extends StatelessWidget {
                   style: TextStyle(color: Colors.white),
                 ),
                 onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/register');
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed('/donor_type_selection');
                 },
               ),
               SizedBox(height: 16),

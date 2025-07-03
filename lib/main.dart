@@ -7,6 +7,7 @@ import 'pages/login.dart';
 import 'pages/register.dart';
 import 'pages/donor_signup.dart';
 import 'widgets/mobile_nav_drawer.dart';
+import 'pages/donor_type_selection.dart';
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -139,6 +140,7 @@ class MealBridgeWebApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
         '/donate': (context) => DonorSignUpPage(),
+        '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -159,6 +161,7 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/impact': (context) => ImpactPage(),
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
+        '/donor-type-selection': (context) => DonorTypeSelectionPage(),
       },
       debugShowCheckedModeBanner: false,
     );
