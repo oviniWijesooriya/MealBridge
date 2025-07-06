@@ -82,7 +82,7 @@ class _DonorWelcomeContent extends StatelessWidget {
             style: TextStyle(color: Colors.white),
           ),
           onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/donate');
+            Navigator.of(context).pushReplacementNamed('/donate-food');
           },
         ),
         SizedBox(height: 18),
