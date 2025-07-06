@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'pages/find_food.dart';
-// import 'pages/donate.dart';
 import 'pages/impact.dart';
-import 'pages/login.dart';
 import 'pages/donor_signup_form.dart';
 import 'pages/donor_signup.dart';
 import 'widgets/mobile_nav_drawer.dart';
@@ -11,6 +9,8 @@ import 'pages/donor_type_selection.dart';
 import 'pages/community_agreement.dart';
 import 'pages/donor_welcome.dart';
 import 'pages/donate_food_form.dart';
+import 'pages/login-2.dart';
+import 'pages/donor_dashboard.dart';
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -19,7 +19,9 @@ void main() {
 // Shared green header/navigation bar
 class MealBridgeHeader extends StatelessWidget {
   final bool isWeb;
-  const MealBridgeHeader({required this.isWeb, Key? key}) : super(key: key);
+  final String? title;
+  const MealBridgeHeader({required this.isWeb, this.title, Key? key})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -138,15 +140,17 @@ class MealBridgeWebApp extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
-        // '/donate': (context) => DonatePage(),
         '/impact': (context) => ImpactPage(),
-        '/login': (context) => LoginPage(),
         '/register': (context) => DonorSignUpFormPage(),
         '/donate': (context) => DonorSignUpPage(),
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
         '/agreement': (context) => CommunityAgreementPage(),
         '/donor-welcome': (context) => DonorWelcomePage(),
         '/donate-food': (context) => DonateFoodFormPage(),
+        '/login': (context) => CommonLoginPage(),
+        '/donor-dashboard': (context) => DonorDashboardPage(),
+        // '/recipient-dashboard': (context) => RecipientDashboardPage(),
+        // '/volunteer-dashboard': (context) => VolunteerDashboardPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -165,11 +169,12 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/find-food': (context) => FindFoodPage(),
         '/donate': (context) => DonorSignUpPage(),
         '/impact': (context) => ImpactPage(),
-        '/login': (context) => LoginPage(),
         '/register': (context) => DonorSignUpFormPage(),
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
         '/agreement': (context) => CommunityAgreementPage(),
         '/donor-welcome': (context) => DonorWelcomePage(),
+        '/donate-food': (context) => DonateFoodFormPage(),
+        '/login': (context) => CommonLoginPage(),
       },
       debugShowCheckedModeBanner: false,
     );
