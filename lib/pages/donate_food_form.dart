@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_picker_web/image_picker_web.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
@@ -17,17 +20,22 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
   double? quantity;
   String? quantityUnit = 'kg';
   DateTime? expiryDate;
-  String? pickupAddress = '123 Main Street, Kandy'; // Example: auto-filled
+  String? pickupAddress = '123 Main Street, Kandy';
   TimeOfDay? pickupUntil;
-  // For image upload, you can use a File/ImagePicker in a real app.
-  // For now, just simulate with a placeholder.
+
+  XFile? _pickedImage;
+  Image? _webImage;
+  final ImagePicker _picker = ImagePicker();
+
+  final expiryDateController = TextEditingController();
+  final pickupUntilController = TextEditingController();
+
   bool checklist1 = false;
   bool checklist2 = false;
   bool checklist3 = false;
+
   bool get allChecklist => checklist1 && checklist2 && checklist3;
-
   bool get isMeal => foodType == 'Cooked Meal' || foodType == 'Bakery';
-
   bool get isProduce => foodType == 'Fruits' || foodType == 'Vegetables';
 
   List<String> foodTypes = [
@@ -46,6 +54,130 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
     'packs',
     'litres',
   ];
+
+  @override
+  void dispose() {
+    expiryDateController.dispose();
+    pickupUntilController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    if (kIsWeb) {
+      final image = await ImagePickerWeb.getImageAsWidget();
+      setState(() {
+        _webImage = image;
+      });
+    } else {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _pickedImage = pickedFile;
+        });
+      }
+    }
+  }
+
+  void _updateExpiryDate(DateTime? date) {
+    setState(() {
+      expiryDate = date;
+      expiryDateController.text =
+          date == null
+              ? ''
+              : "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    });
+  }
+
+  void _updatePickupUntil(TimeOfDay? time) {
+    setState(() {
+      pickupUntil = time;
+      pickupUntilController.text = time == null ? '' : time.format(context);
+    });
+  }
+
+  void _onPublish() {
+    if (_formKey.currentState?.validate() == true && allChecklist) {
+      // TODO: Submit donation to backend
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Donation published!')));
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showPreviewDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Preview Donation'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (kIsWeb && _webImage != null)
+                    Container(height: 120, child: _webImage)
+                  else if (!kIsWeb && _pickedImage != null)
+                    Image.file(File(_pickedImage!.path), height: 120),
+                  SizedBox(height: 10),
+                  _PreviewRow(
+                    label: 'Food Type',
+                    value: foodType == 'Other' ? customFoodType : foodType,
+                  ),
+                  _PreviewRow(label: 'Description', value: description),
+                  if (isMeal)
+                    _PreviewRow(label: 'Servings', value: servings?.toString()),
+                  if (isProduce)
+                    _PreviewRow(
+                      label: 'Quantity',
+                      value:
+                          (quantity != null && quantityUnit != null)
+                              ? '$quantity $quantityUnit'
+                              : null,
+                    ),
+                  _PreviewRow(
+                    label: 'Best Before / Expiry',
+                    value:
+                        expiryDate != null
+                            ? "${expiryDate!.year}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.day.toString().padLeft(2, '0')}"
+                            : null,
+                  ),
+                  _PreviewRow(label: 'Pickup Location', value: pickupAddress),
+                  _PreviewRow(
+                    label: 'Pickup Until',
+                    value: pickupUntil?.format(context),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Food Safety & Hygiene:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  _PreviewChecklist(
+                    'Is within its best before/expiry date.',
+                    checklist1,
+                  ),
+                  _PreviewChecklist(
+                    'Has been handled and stored hygienically.',
+                    checklist2,
+                  ),
+                  _PreviewChecklist(
+                    'Accurate information provided.',
+                    checklist3,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
+              ),
+            ],
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +202,13 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       quantityUnits: quantityUnits,
       onQuantityUnitChanged: (val) => setState(() => quantityUnit = val),
       expiryDate: expiryDate,
-      onExpiryDateChanged: (val) => setState(() => expiryDate = val),
+      onExpiryDateChanged: _updateExpiryDate,
+      expiryDateController: expiryDateController,
       pickupAddress: pickupAddress,
       onPickupAddressChanged: (val) => setState(() => pickupAddress = val),
       pickupUntil: pickupUntil,
-      onPickupUntilChanged: (val) => setState(() => pickupUntil = val),
+      onPickupUntilChanged: _updatePickupUntil,
+      pickupUntilController: pickupUntilController,
       checklist1: checklist1,
       checklist2: checklist2,
       checklist3: checklist3,
@@ -82,32 +216,13 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       onChecklist2Changed: (v) => setState(() => checklist2 = v ?? false),
       onChecklist3Changed: (v) => setState(() => checklist3 = v ?? false),
       allChecklist: allChecklist,
-      onPreview: () {
-        // Show a preview dialog or page (not implemented here)
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text('Preview Donation'),
-                content: Text('This is a preview of your donation listing.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Close'),
-                  ),
-                ],
-              ),
-        );
-      },
+      onPreview: _showPreviewDialog,
+      onPickImage: _pickImage,
+      pickedImage: _pickedImage,
+      webImage: _webImage,
       onPublish:
-          allChecklist && _formKey.currentState?.validate() == true
-              ? () {
-                // TODO: Submit donation to backend
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Donation published!')));
-                Navigator.of(context).pop(); // Go back to dashboard or home
-              }
+          (allChecklist && _formKey.currentState?.validate() == true)
+              ? _onPublish
               : null,
       isMeal: isMeal,
       isProduce: isProduce,
@@ -161,10 +276,12 @@ class _DonateFoodFormContent extends StatelessWidget {
   final ValueChanged<String?> onQuantityUnitChanged;
   final DateTime? expiryDate;
   final ValueChanged<DateTime?> onExpiryDateChanged;
+  final TextEditingController expiryDateController;
   final String? pickupAddress;
   final ValueChanged<String?> onPickupAddressChanged;
   final TimeOfDay? pickupUntil;
   final ValueChanged<TimeOfDay?> onPickupUntilChanged;
+  final TextEditingController pickupUntilController;
   final bool checklist1;
   final bool checklist2;
   final bool checklist3;
@@ -174,6 +291,9 @@ class _DonateFoodFormContent extends StatelessWidget {
   final bool allChecklist;
   final VoidCallback onPreview;
   final VoidCallback? onPublish;
+  final VoidCallback onPickImage;
+  final XFile? pickedImage;
+  final Image? webImage;
   final bool isMeal;
   final bool isProduce;
 
@@ -195,10 +315,12 @@ class _DonateFoodFormContent extends StatelessWidget {
     required this.onQuantityUnitChanged,
     required this.expiryDate,
     required this.onExpiryDateChanged,
+    required this.expiryDateController,
     required this.pickupAddress,
     required this.onPickupAddressChanged,
     required this.pickupUntil,
     required this.onPickupUntilChanged,
+    required this.pickupUntilController,
     required this.checklist1,
     required this.checklist2,
     required this.checklist3,
@@ -208,6 +330,9 @@ class _DonateFoodFormContent extends StatelessWidget {
     required this.allChecklist,
     required this.onPreview,
     required this.onPublish,
+    required this.onPickImage,
+    required this.pickedImage,
+    required this.webImage,
     required this.isMeal,
     required this.isProduce,
   });
@@ -304,12 +429,7 @@ class _DonateFoodFormContent extends StatelessWidget {
               labelText: 'Best Before / Expiry Date *',
             ),
             readOnly: true,
-            controller: TextEditingController(
-              text:
-                  expiryDate == null
-                      ? ''
-                      : "${expiryDate!.year}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.day.toString().padLeft(2, '0')}",
-            ),
+            controller: expiryDateController,
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -332,9 +452,7 @@ class _DonateFoodFormContent extends StatelessWidget {
           TextFormField(
             decoration: InputDecoration(labelText: 'Pickup available until *'),
             readOnly: true,
-            controller: TextEditingController(
-              text: pickupUntil == null ? '' : pickupUntil!.format(context),
-            ),
+            controller: pickupUntilController,
             onTap: () async {
               final picked = await showTimePicker(
                 context: context,
@@ -345,17 +463,20 @@ class _DonateFoodFormContent extends StatelessWidget {
             validator: (v) => (pickupUntil == null) ? 'Required' : null,
           ),
           SizedBox(height: 14),
-          // Food Image Upload (placeholder)
           OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Implement image picker
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Image picker not implemented')),
-              );
-            },
+            onPressed: onPickImage,
             icon: Icon(Icons.photo_camera),
             label: Text('Upload Food Image (optional)'),
           ),
+          SizedBox(height: 10),
+          if (kIsWeb)
+            (webImage != null)
+                ? Container(height: 120, child: webImage)
+                : Text('No image selected.'),
+          if (!kIsWeb)
+            (pickedImage != null)
+                ? Image.file(File(pickedImage!.path), height: 120)
+                : Text('No image selected.'),
           SizedBox(height: 18),
           Text(
             'Food Safety & Hygiene Checklist',
@@ -400,6 +521,46 @@ class _DonateFoodFormContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PreviewRow extends StatelessWidget {
+  final String label;
+  final String? value;
+  const _PreviewRow({required this.label, this.value});
+  @override
+  Widget build(BuildContext context) {
+    if (value == null || value!.isEmpty) return SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(value!)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewChecklist extends StatelessWidget {
+  final String label;
+  final bool checked;
+  const _PreviewChecklist(this.label, this.checked);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          checked ? Icons.check_box : Icons.check_box_outline_blank,
+          color: checked ? Colors.green : Colors.grey,
+          size: 18,
+        ),
+        SizedBox(width: 6),
+        Expanded(child: Text(label)),
+      ],
     );
   }
 }
