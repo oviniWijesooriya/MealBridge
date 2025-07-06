@@ -10,6 +10,7 @@ import 'widgets/mobile_nav_drawer.dart';
 import 'pages/donor_type_selection.dart';
 import 'pages/community_agreement.dart';
 import 'pages/donor_welcome.dart';
+import 'pages/donate_food_form.dart';
 
 void main() {
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
@@ -145,6 +146,7 @@ class MealBridgeWebApp extends StatelessWidget {
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
         '/agreement': (context) => CommunityAgreementPage(),
         '/donor-welcome': (context) => DonorWelcomePage(),
+        '/donate-food': (context) => DonateFoodFormPage(),
       },
       debugShowCheckedModeBanner: false,
     );
