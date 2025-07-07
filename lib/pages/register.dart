@@ -1,299 +1,229 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
-// Import MobileNavDrawer if it's in another file, or place it here if needed.
-
-class RegisterPage extends StatelessWidget {
-  const RegisterPage({Key? key}) : super(key: key);
-
+class RegisterPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return kIsWeb ? RegisterWeb() : RegisterMobile();
-  }
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-// =====================
-// WEB VERSION
-// =====================
-class RegisterWeb extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ListView(
-        children: [
-          MealBridgeHeader(isWeb: true), // Use your existing WebHeader widget
-          Center(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: 400),
-              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-              margin: EdgeInsets.only(top: 60),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12)],
-              ),
-              child: RegisterFormWeb(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class RegisterFormWeb extends StatefulWidget {
-  @override
-  State<RegisterFormWeb> createState() => _RegisterFormWebState();
-}
-
-class _RegisterFormWebState extends State<RegisterFormWeb> {
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  String? name, email, password, role;
-  bool _obscure = true;
+  String? email, password, confirmPassword, username, donorName;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Register for MealBridge',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF006622),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 24),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Full Name'),
-            onSaved: (v) => name = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            decoration: InputDecoration(labelText: 'Role'),
-            value: role,
-            items: [
-              DropdownMenuItem(child: Text('Donor'), value: 'Donor'),
-              DropdownMenuItem(child: Text('Recipient'), value: 'Recipient'),
-              DropdownMenuItem(child: Text('Volunteer'), value: 'Volunteer'),
-            ],
-            onChanged: (v) => setState(() => role = v),
-            validator: (v) => v == null ? 'Please select a role' : null,
-          ),
-          SizedBox(height: 16),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            onSaved: (v) => email = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 16),
-          TextFormField(
-            decoration: InputDecoration(
-              labelText: 'Password',
-              suffixIcon: IconButton(
-                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscure = !_obscure),
-              ),
-            ),
-            obscureText: _obscure,
-            onSaved: (v) => password = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF009933),
-              padding: EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                _formKey.currentState!.save();
-                // TODO: Implement registration logic
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Registered as $role')));
-              }
-            },
-            child: Text(
-              'Register',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
-            child: Text('Already have an account? Login'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _register() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      if (password != confirmPassword) {
+        setState(() {
+          _errorMessage = "Passwords do not match.";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Create user in Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email!, password: password!);
+
+      // Optionally store extra user info in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'username': username,
+            'donorName': donorName,
+            'email': email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      // Navigate to next onboarding step
+      Navigator.of(context).pushReplacementNamed(
+        '/agreement',
+        arguments: {'donorName': donorName ?? username ?? email},
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Registration failed. Please try again.";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-}
 
-// =====================
-// MOBILE VERSION
-// =====================
-class RegisterMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF009933),
-        title: Row(
-          children: [
-            MealBridgeHeader(isWeb: false),
-            Text(
-              'Meal',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              'Bridge',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFFF9E1B),
-              ),
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Sri Lanka',
-              style: TextStyle(fontSize: 14, color: Colors.white),
-            ),
-          ],
-        ),
-        automaticallyImplyLeading: false,
-        actions: [
-          Builder(
-            builder:
-                (context) => IconButton(
-                  icon: Icon(Icons.menu, color: Colors.white),
-                  onPressed: () {
-                    Scaffold.of(context).openEndDrawer();
-                  },
-                ),
-          ),
-        ],
-      ),
-      endDrawer: MobileNavDrawer(),
-      body: ListView(
+    final content = Center(
+      child: Container(
+        constraints: BoxConstraints(maxWidth: 420),
         padding: EdgeInsets.all(24),
-        children: [RegisterFormMobile()],
-      ),
-    );
-  }
-}
-
-class RegisterFormMobile extends StatefulWidget {
-  @override
-  State<RegisterFormMobile> createState() => _RegisterFormMobileState();
-}
-
-class _RegisterFormMobileState extends State<RegisterFormMobile> {
-  final _formKey = GlobalKey<FormState>();
-  String? name, email, password, role;
-  bool _obscure = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Register for MealBridge',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF006622),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Full Name'),
-            onSaved: (v) => name = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            decoration: InputDecoration(labelText: 'Role'),
-            value: role,
-            items: [
-              DropdownMenuItem(child: Text('Donor'), value: 'Donor'),
-              DropdownMenuItem(child: Text('Recipient'), value: 'Recipient'),
-              DropdownMenuItem(child: Text('Volunteer'), value: 'Volunteer'),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Icon(Icons.person_add, size: 48, color: Color(0xFF009933)),
+              SizedBox(height: 16),
+              Text(
+                "Register",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF006622),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              TextFormField(
+                decoration: InputDecoration(labelText: "Donor Name"),
+                onChanged: (v) => donorName = v,
+                validator: (v) => v == null || v.isEmpty ? "Required" : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                decoration: InputDecoration(labelText: "Username"),
+                onChanged: (v) => username = v,
+                validator: (v) => v == null || v.isEmpty ? "Required" : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                decoration: InputDecoration(labelText: "Email"),
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (v) => email = v,
+                validator: (v) => v == null || v.isEmpty ? "Required" : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                  ),
+                ),
+                onChanged: (v) => password = v,
+                validator:
+                    (v) =>
+                        v == null || v.length < 8
+                            ? "At least 8 characters"
+                            : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
+                obscureText: _obscureConfirm,
+                decoration: InputDecoration(
+                  labelText: "Confirm Password",
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed:
+                        () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                ),
+                onChanged: (v) => confirmPassword = v,
+                validator: (v) => v == null || v.isEmpty ? "Required" : null,
+              ),
+              SizedBox(height: 18),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF009933),
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    textStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () {
+                            if (_formKey.currentState?.validate() == true) {
+                              _register();
+                            }
+                          },
+                  child:
+                      _isLoading
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text("Register"),
+                ),
+              ),
+              SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                },
+                child: Text(
+                  "Already have an account? Login",
+                  style: TextStyle(
+                    color: Color(0xFF1A75BB),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
-            onChanged: (v) => setState(() => role = v),
-            validator: (v) => v == null ? 'Please select a role' : null,
           ),
-          SizedBox(height: 12),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            onSaved: (v) => email = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 12),
-          TextFormField(
-            decoration: InputDecoration(
-              labelText: 'Password',
-              suffixIcon: IconButton(
-                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscure = !_obscure),
-              ),
-            ),
-            obscureText: _obscure,
-            onSaved: (v) => password = v,
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF009933),
-              padding: EdgeInsets.symmetric(vertical: 14),
-            ),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                _formKey.currentState!.save();
-                // TODO: Implement registration logic
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Registered as $role')));
-              }
-            },
-            child: Text(
-              'Register',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
-            child: Text('Already have an account? Login'),
-          ),
-        ],
+        ),
       ),
     );
+
+    return kIsWeb
+        ? Scaffold(
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(56),
+            child: MealBridgeHeader(isWeb: true),
+          ),
+          body: content,
+        )
+        : Scaffold(
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(56),
+            child: MealBridgeHeader(isWeb: false),
+          ),
+          endDrawer: MobileNavDrawer(),
+          body: content,
+        );
   }
 }
