@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "767964477514",
+    "project_id": "mealbridge-2025",
+    "storage_bucket": "mealbridge-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:767964477514:android:8fa964d72b967d59f2ceb3",
+        "android_client_info": {
+          "package_name": "com.example.mealbridge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2XfK66-XnmGsz_dr0W1Ex7hZCrGKYsPM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
