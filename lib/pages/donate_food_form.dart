@@ -1,8 +1,11 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_web/image_picker_web.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
@@ -25,6 +28,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
 
   XFile? _pickedImage;
   Image? _webImage;
+  Uint8List? _webImageBytes;
   final ImagePicker _picker = ImagePicker();
 
   final expiryDateController = TextEditingController();
@@ -33,6 +37,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
   bool checklist1 = false;
   bool checklist2 = false;
   bool checklist3 = false;
+  String? errorMessage;
 
   bool get allChecklist => checklist1 && checklist2 && checklist3;
   bool get isMeal => foodType == 'Cooked Meal' || foodType == 'Bakery';
@@ -63,47 +68,123 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
   }
 
   Future<void> _pickImage() async {
-    if (kIsWeb) {
-      final image = await ImagePickerWeb.getImageAsWidget();
-      setState(() {
-        _webImage = image;
-      });
-    } else {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-      );
-      if (pickedFile != null) {
+    try {
+      if (kIsWeb) {
+        final image = await ImagePickerWeb.getImageAsWidget();
+        final bytes = await ImagePickerWeb.getImageAsBytes();
         setState(() {
-          _pickedImage = pickedFile;
+          _webImage = image;
+          _webImageBytes = bytes;
         });
+      } else {
+        final XFile? pickedFile = await _picker.pickImage(
+          source: ImageSource.gallery,
+        );
+        if (pickedFile != null) {
+          setState(() {
+            _pickedImage = pickedFile;
+          });
+        }
       }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Image selection failed: $e";
+      });
     }
   }
 
-  void _updateExpiryDate(DateTime? date) {
-    setState(() {
-      expiryDate = date;
-      expiryDateController.text =
-          date == null
-              ? ''
-              : "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    });
+  Future<String?> _uploadImage() async {
+    try {
+      final storage = FirebaseStorage.instance;
+      String fileName =
+          'donations/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      if (kIsWeb && _webImageBytes != null) {
+        final ref = storage.ref().child(fileName);
+        await ref.putData(_webImageBytes!);
+        return await ref.getDownloadURL();
+      } else if (!kIsWeb && _pickedImage != null) {
+        final ref = storage.ref().child(fileName);
+        await ref.putFile(File(_pickedImage!.path));
+        return await ref.getDownloadURL();
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Image upload failed: $e";
+      });
+    }
+    return null;
   }
 
-  void _updatePickupUntil(TimeOfDay? time) {
-    setState(() {
-      pickupUntil = time;
-      pickupUntilController.text = time == null ? '' : time.format(context);
-    });
-  }
+  Future<void> _onPublish() async {
+    setState(() => errorMessage = null);
+    if (_formKey.currentState?.validate() != true || !allChecklist) {
+      setState(() {
+        errorMessage = "Please complete all required fields and checklist.";
+      });
+      return;
+    }
 
-  void _onPublish() {
-    if (_formKey.currentState?.validate() == true && allChecklist) {
-      // TODO: Submit donation to backend
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Publishing donation...')));
+
+    String? imageUrl;
+    if (_pickedImage != null || _webImageBytes != null) {
+      imageUrl = await _uploadImage();
+      if (imageUrl == null) {
+        setState(() {
+          errorMessage = "Failed to upload image.";
+        });
+        return;
+      }
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        errorMessage = "You must be logged in to donate.";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You must be logged in to donate.')),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('donations').add({
+        'donorUid': user.uid,
+        'foodType': foodType == 'Other' ? customFoodType : foodType,
+        'description': description,
+        'servings': isMeal ? servings : null,
+        'quantity': isProduce ? quantity : null,
+        'quantityUnit': isProduce ? quantityUnit : null,
+        'expiryDate':
+            expiryDate != null ? Timestamp.fromDate(expiryDate!) : null,
+        'pickupAddress': pickupAddress,
+        'pickupUntil':
+            pickupUntil != null
+                ? '${pickupUntil!.hour.toString().padLeft(2, '0')}:${pickupUntil!.minute.toString().padLeft(2, '0')}'
+                : null,
+        'imageUrl': imageUrl,
+        'checklist1': checklist1,
+        'checklist2': checklist2,
+        'checklist3': checklist3,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'active',
+      });
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Donation published!')));
       Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        errorMessage = "Failed to publish donation: $e";
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to publish donation.')));
     }
   }
 
@@ -179,6 +260,23 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
     );
   }
 
+  void _updateExpiryDate(DateTime? date) {
+    setState(() {
+      expiryDate = date;
+      expiryDateController.text =
+          date == null
+              ? ''
+              : "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    });
+  }
+
+  void _updatePickupUntil(TimeOfDay? time) {
+    setState(() {
+      pickupUntil = time;
+      pickupUntilController.text = time == null ? '' : time.format(context);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = _DonateFoodFormContent(
@@ -239,7 +337,19 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
               child: Container(
                 constraints: BoxConstraints(maxWidth: 520),
                 padding: EdgeInsets.symmetric(vertical: 36, horizontal: 22),
-                child: content,
+                child: Column(
+                  children: [
+                    if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: Text(
+                          errorMessage!,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    content,
+                  ],
+                ),
               ),
             ),
           ),
@@ -252,7 +362,19 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
           endDrawer: MobileNavDrawer(),
           body: SingleChildScrollView(
             padding: EdgeInsets.symmetric(vertical: 22, horizontal: 12),
-            child: content,
+            child: Column(
+              children: [
+                if (errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Text(
+                      errorMessage!,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                content,
+              ],
+            ),
           ),
         );
   }
