@@ -70,11 +70,11 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
   Future<void> _pickImage() async {
     try {
       if (kIsWeb) {
-        final image = await ImagePickerWeb.getImageAsWidget();
         final bytes = await ImagePickerWeb.getImageAsBytes();
         setState(() {
-          _webImage = image;
           _webImageBytes = bytes;
+          _webImage =
+              bytes != null ? Image.memory(bytes, fit: BoxFit.cover) : null;
         });
       } else {
         final XFile? pickedFile = await _picker.pickImage(
@@ -90,6 +90,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       setState(() {
         errorMessage = "Image selection failed: $e";
       });
+      print("Image selection error: $e");
     }
   }
 
@@ -99,7 +100,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       String fileName =
           'donations/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      if (kIsWeb && _webImageBytes != null) {
+      if (kIsWeb && _webImageBytes != null && _webImageBytes!.isNotEmpty) {
         final ref = storage.ref().child(fileName);
         await ref.putData(_webImageBytes!);
         return await ref.getDownloadURL();
@@ -112,6 +113,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       setState(() {
         errorMessage = "Image upload failed: $e";
       });
+      print("Image upload error: $e");
     }
     return null;
   }
@@ -130,7 +132,8 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
     ).showSnackBar(SnackBar(content: Text('Publishing donation...')));
 
     String? imageUrl;
-    if (_pickedImage != null || _webImageBytes != null) {
+    if ((_pickedImage != null && !kIsWeb) ||
+        (kIsWeb && _webImageBytes != null && _webImageBytes!.isNotEmpty)) {
       imageUrl = await _uploadImage();
       if (imageUrl == null) {
         setState(() {
@@ -177,11 +180,12 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Donation published!')));
-      Navigator.of(context).pop();
+      Navigator.of(context).pushReplacementNamed('/donor-dashboard');
     } catch (e) {
       setState(() {
         errorMessage = "Failed to publish donation: $e";
       });
+      print("Firestore publish error: $e");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to publish donation.')));
