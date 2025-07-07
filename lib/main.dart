@@ -11,8 +11,13 @@ import 'pages/donor_welcome.dart';
 import 'pages/donate_food_form.dart';
 import 'pages/login-2.dart';
 import 'pages/donor_dashboard.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'pages/register.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(kIsWeb ? MealBridgeWebApp() : MealBridgeMobileApp());
 }
 
@@ -141,7 +146,8 @@ class MealBridgeWebApp extends StatelessWidget {
         '/': (context) => HomePage(),
         '/find-food': (context) => FindFoodPage(),
         '/impact': (context) => ImpactPage(),
-        '/register': (context) => DonorSignUpFormPage(),
+        // '/register': (context) => DonorSignUpFormPage(),
+        '/register': (context) => RegisterPage(),
         '/donate': (context) => DonorSignUpPage(),
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
         '/agreement': (context) => CommunityAgreementPage(),
