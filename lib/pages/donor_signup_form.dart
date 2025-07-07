@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../main.dart'; // For MealBridgeHeader
@@ -11,6 +13,7 @@ class DonorSignUpFormPage extends StatefulWidget {
 class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   // All possible fields
   String? organizationName;
@@ -26,20 +29,16 @@ class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
   String? eventName;
   String? eventAddress;
 
-  // For password strength
   double passwordStrength = 0;
-
-  // For error messages
   String? errorMessage;
+  bool isSubmitting = false;
 
-  // Donor type info (passed from previous page)
   late String donorType;
   late IconData donorIcon;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Get donor type and icon from route arguments (as Map)
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map) {
       donorType = args['type'] as String? ?? 'Donor';
@@ -59,7 +58,6 @@ class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
 
   bool get isSpecialOccasion => donorType == 'Special Occasions/Other';
 
-  // Password strength logic
   void _checkPasswordStrength(String value) {
     double strength = 0;
     if (value.length >= 8) strength += 0.3;
@@ -69,6 +67,83 @@ class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
     setState(() {
       passwordStrength = strength.clamp(0, 1);
     });
+  }
+
+  Future<void> _onSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      isSubmitting = true;
+      errorMessage = null;
+    });
+    _formKey.currentState!.save();
+
+    String donorName = '';
+    if (isBusiness) {
+      donorName =
+          organizationName?.trim().isNotEmpty == true
+              ? organizationName!
+              : (responsibleName?.trim().isNotEmpty == true
+                  ? responsibleName!
+                  : 'Donor');
+    } else if (isHousehold) {
+      donorName =
+          responsibleName?.trim().isNotEmpty == true
+              ? responsibleName!
+              : 'Donor';
+    } else if (isSpecialOccasion) {
+      donorName =
+          eventName?.trim().isNotEmpty == true
+              ? eventName!
+              : (responsibleName?.trim().isNotEmpty == true
+                  ? responsibleName!
+                  : 'Donor');
+    } else {
+      donorName =
+          responsibleName?.trim().isNotEmpty == true
+              ? responsibleName!
+              : 'Donor';
+    }
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email!, password: password!);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'uid': userCredential.user!.uid,
+            'role': 'donor',
+            'donorType': donorType,
+            'organizationName': organizationName,
+            'businessRegNo': businessRegNo,
+            'responsibleName': responsibleName,
+            'position': position,
+            'mobile': mobile,
+            'address': address,
+            'email': email,
+            'username': username,
+            'eventName': eventName,
+            'eventAddress': eventAddress,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      Navigator.of(
+        context,
+      ).pushReplacementNamed('/agreement', arguments: {'donorName': donorName});
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = "Registration failed. Please try again.";
+      });
+    } finally {
+      setState(() {
+        isSubmitting = false;
+      });
+    }
   }
 
   @override
@@ -82,49 +157,24 @@ class _DonorSignUpFormPageState extends State<DonorSignUpFormPage> {
       isHousehold: isHousehold,
       isSpecialOccasion: isSpecialOccasion,
       passwordController: _passwordController,
+      confirmPasswordController: _confirmPasswordController,
       onPasswordChanged: _checkPasswordStrength,
       passwordStrength: passwordStrength,
-      // Pass callbacks to update the parent state
       onOrgNameSaved: (v) => organizationName = v,
+      onBusinessRegNoSaved: (v) => businessRegNo = v,
       onRespNameSaved: (v) => responsibleName = v,
+      onPositionSaved: (v) => position = v,
+      onMobileSaved: (v) => mobile = v,
+      onAddressSaved: (v) => address = v,
+      onEmailSaved: (v) => email = v,
+      onUsernameSaved: (v) => username = v,
+      onPasswordSaved: (v) => password = v,
+      onConfirmPasswordSaved: (v) => confirmPassword = v,
       onEventNameSaved: (v) => eventName = v,
-      onSubmit: () {
-        if (_formKey.currentState!.validate()) {
-          _formKey.currentState!.save();
-          // Choose the correct donor name based on donor type
-          String donorName = '';
-          if (isBusiness) {
-            donorName =
-                organizationName?.trim().isNotEmpty == true
-                    ? organizationName!
-                    : (responsibleName?.trim().isNotEmpty == true
-                        ? responsibleName!
-                        : 'Donor');
-          } else if (isHousehold) {
-            donorName =
-                responsibleName?.trim().isNotEmpty == true
-                    ? responsibleName!
-                    : 'Donor';
-          } else if (isSpecialOccasion) {
-            donorName =
-                eventName?.trim().isNotEmpty == true
-                    ? eventName!
-                    : (responsibleName?.trim().isNotEmpty == true
-                        ? responsibleName!
-                        : 'Donor');
-          } else {
-            donorName =
-                responsibleName?.trim().isNotEmpty == true
-                    ? responsibleName!
-                    : 'Donor';
-          }
-          // Pass donorName to agreement page
-          Navigator.of(context).pushReplacementNamed(
-            '/agreement',
-            arguments: {'donorName': donorName},
-          );
-        }
-      },
+      onEventAddressSaved: (v) => eventAddress = v,
+      onSubmit: _onSubmit,
+      isSubmitting: isSubmitting,
+      errorMessage: errorMessage,
     );
 
     return isWeb
@@ -165,12 +215,24 @@ class _DonorSignUpFormContent extends StatefulWidget {
   final bool isHousehold;
   final bool isSpecialOccasion;
   final TextEditingController passwordController;
+  final TextEditingController confirmPasswordController;
   final void Function(String) onPasswordChanged;
   final double passwordStrength;
   final void Function(String?)? onOrgNameSaved;
+  final void Function(String?)? onBusinessRegNoSaved;
   final void Function(String?)? onRespNameSaved;
+  final void Function(String?)? onPositionSaved;
+  final void Function(String?)? onMobileSaved;
+  final void Function(String?)? onAddressSaved;
+  final void Function(String?)? onEmailSaved;
+  final void Function(String?)? onUsernameSaved;
+  final void Function(String?)? onPasswordSaved;
+  final void Function(String?)? onConfirmPasswordSaved;
   final void Function(String?)? onEventNameSaved;
+  final void Function(String?)? onEventAddressSaved;
   final VoidCallback onSubmit;
+  final bool isSubmitting;
+  final String? errorMessage;
 
   const _DonorSignUpFormContent({
     required this.formKey,
@@ -180,12 +242,24 @@ class _DonorSignUpFormContent extends StatefulWidget {
     required this.isHousehold,
     required this.isSpecialOccasion,
     required this.passwordController,
+    required this.confirmPasswordController,
     required this.onPasswordChanged,
     required this.passwordStrength,
     this.onOrgNameSaved,
+    this.onBusinessRegNoSaved,
     this.onRespNameSaved,
+    this.onPositionSaved,
+    this.onMobileSaved,
+    this.onAddressSaved,
+    this.onEmailSaved,
+    this.onUsernameSaved,
+    this.onPasswordSaved,
+    this.onConfirmPasswordSaved,
     this.onEventNameSaved,
+    this.onEventAddressSaved,
     required this.onSubmit,
+    required this.isSubmitting,
+    required this.errorMessage,
   });
 
   @override
@@ -204,7 +278,6 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header with icon and donor type
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -233,7 +306,7 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               label: "Business Registration Number",
               hint: "Optional",
               validator: null,
-              onSaved: null,
+              onSaved: widget.onBusinessRegNoSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
@@ -247,7 +320,7 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               label: "Position/Role *",
               hint: "e.g., Owner, Manager",
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onPositionSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
@@ -255,14 +328,14 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onMobileSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Business Address *",
               hint: "e.g., 123 Main Street, Kandy",
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onAddressSaved,
             ),
           ] else if (widget.isHousehold) ...[
             _buildTextField(
@@ -277,14 +350,14 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onMobileSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Home Address *",
               hint: "e.g., 456 Lake Road, Colombo",
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onAddressSaved,
             ),
           ] else if (widget.isSpecialOccasion) ...[
             _buildTextField(
@@ -306,40 +379,39 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
               hint: "e.g., 07XXXXXXXX",
               keyboardType: TextInputType.phone,
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onMobileSaved,
             ),
             SizedBox(height: 14),
             _buildTextField(
               label: "Event Address/Location *",
               hint: "e.g., Temple Road, Galle",
               validator: _requiredValidator,
-              onSaved: null,
+              onSaved: widget.onEventAddressSaved,
             ),
           ],
-          // Common fields
           if (!widget.isBusiness) SizedBox(height: 14),
           _buildTextField(
             label: "Email Address *",
             hint: "e.g., donor@email.com",
             keyboardType: TextInputType.emailAddress,
             validator: _requiredValidator,
-            onSaved: null,
+            onSaved: widget.onEmailSaved,
           ),
           SizedBox(height: 14),
           _buildTextField(
             label: "Username *",
             hint: "Choose a username",
             validator: _requiredValidator,
-            onSaved: null,
+            onSaved: widget.onUsernameSaved,
           ),
           SizedBox(height: 14),
-          // Password with strength indicator
           TextFormField(
             controller: widget.passwordController,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
               labelText: "Password *",
               hintText: "At least 8 characters",
+              border: OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -356,7 +428,7 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
                             ? "Password must be at least 8 characters"
                             : null),
             onChanged: widget.onPasswordChanged,
-            onSaved: null,
+            onSaved: widget.onPasswordSaved,
           ),
           SizedBox(height: 6),
           LinearProgressIndicator(
@@ -372,10 +444,12 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
           ),
           SizedBox(height: 10),
           TextFormField(
+            controller: widget.confirmPasswordController,
             obscureText: _obscureConfirm,
             decoration: InputDecoration(
               labelText: "Confirm Password *",
               hintText: "Re-enter your password",
+              border: OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureConfirm ? Icons.visibility_off : Icons.visibility,
@@ -390,17 +464,42 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
                 return "Passwords do not match";
               return null;
             },
-            onSaved: null,
+            onSaved: widget.onConfirmPasswordSaved,
           ),
           SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF009933),
-              padding: EdgeInsets.symmetric(vertical: 16),
-              textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          if (widget.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Text(
+                widget.errorMessage!,
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            onPressed: widget.onSubmit,
-            child: Text("Submit", style: TextStyle(color: Colors.white)),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF009933),
+                padding: EdgeInsets.symmetric(vertical: 16),
+                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              onPressed: widget.isSubmitting ? null : widget.onSubmit,
+              child:
+                  widget.isSubmitting
+                      ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                      : Text("Submit", style: TextStyle(color: Colors.white)),
+            ),
           ),
         ],
       ),
@@ -415,7 +514,11 @@ class _DonorSignUpFormContentState extends State<_DonorSignUpFormContent> {
     void Function(String?)? onSaved,
   }) {
     return TextFormField(
-      decoration: InputDecoration(labelText: label, hintText: hint),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(),
+      ),
       keyboardType: keyboardType,
       validator: validator,
       onSaved: onSaved,
