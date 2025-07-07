@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
@@ -16,14 +18,64 @@ class _CommonLoginPageState extends State<CommonLoginPage> {
   bool _isLoading = false;
   String? _loginError;
 
-  // Simulated backend role lookup (replace with real backend logic)
-  Future<String?> _getUserRole(String usernameOrEmail) async {
-    // Example logic: you should replace this with your backend/Firebase
-    if (usernameOrEmail.toLowerCase().contains('donor')) return 'donor';
-    if (usernameOrEmail.toLowerCase().contains('recipient')) return 'recipient';
-    if (usernameOrEmail.toLowerCase().contains('volunteer')) return 'volunteer';
-    // Default/fallback
-    return null;
+  Future<String?> _getUserRoleAndNavigate(String email, String password) async {
+    try {
+      // Sign in with Firebase Auth
+      UserCredential cred = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      // Fetch user profile from Firestore
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(cred.user!.uid)
+              .get();
+
+      if (!userDoc.exists) {
+        setState(() {
+          _loginError = "User profile not found in database.";
+        });
+        return null;
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final role = userData['role'] as String?;
+      final name =
+          userData['donorName'] ?? userData['username'] ?? userData['email'];
+
+      // Navigate to the correct dashboard based on role
+      if (role == 'donor') {
+        Navigator.of(
+          context,
+        ).pushReplacementNamed('/donor-dashboard', arguments: {'name': name});
+      } else if (role == 'recipient') {
+        Navigator.of(context).pushReplacementNamed(
+          '/recipient-dashboard',
+          arguments: {'name': name},
+        );
+      } else if (role == 'volunteer') {
+        Navigator.of(context).pushReplacementNamed(
+          '/volunteer-dashboard',
+          arguments: {'name': name},
+        );
+      } else {
+        setState(() {
+          _loginError = "User role not found. Contact support.";
+        });
+        return null;
+      }
+      return role;
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _loginError = e.message ?? "Login failed.";
+      });
+      return null;
+    } catch (e) {
+      setState(() {
+        _loginError = "Login failed. Please try again.";
+      });
+      return null;
+    }
   }
 
   void _login() async {
@@ -33,22 +85,23 @@ class _CommonLoginPageState extends State<CommonLoginPage> {
       _loginError = null;
     });
 
-    // Simulate authentication delay
-    await Future.delayed(Duration(seconds: 1));
+    // Use email for login (if you want to support username, implement lookup)
+    final email = usernameOrEmail?.trim();
+    final pwd = password?.trim();
 
-    // Simulate role lookup
-    final role = await _getUserRole(usernameOrEmail ?? "");
-    setState(() => _isLoading = false);
-
-    if (role == 'donor') {
-      Navigator.of(context).pushReplacementNamed('/donor-dashboard');
-    } else if (role == 'recipient') {
-      Navigator.of(context).pushReplacementNamed('/recipient-dashboard');
-    } else if (role == 'volunteer') {
-      Navigator.of(context).pushReplacementNamed('/volunteer-dashboard');
-    } else {
-      setState(() => _loginError = "Invalid username or role not found.");
+    if (email == null || pwd == null) {
+      setState(() {
+        _loginError = "Please enter your email and password.";
+        _isLoading = false;
+      });
+      return;
     }
+
+    await _getUserRoleAndNavigate(email, pwd);
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -76,7 +129,7 @@ class _CommonLoginPageState extends State<CommonLoginPage> {
               SizedBox(height: 24),
               TextFormField(
                 decoration: InputDecoration(
-                  labelText: "Username or Email Address",
+                  labelText: "Email Address",
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (v) => usernameOrEmail = v,
