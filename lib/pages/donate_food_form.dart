@@ -155,6 +155,17 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
     }
 
     try {
+      String? city;
+      if (pickupAddress != null && pickupAddress!.trim().isNotEmpty) {
+        // Split by comma, take the last non-empty part, trim and lowercase
+        final parts = pickupAddress!.split(',');
+        city = parts.isNotEmpty ? parts.last.trim().toLowerCase() : null;
+        // Optionally, handle cases where address has no comma
+        if (city == null || city.isEmpty) {
+          city = pickupAddress!.trim().toLowerCase();
+        }
+      }
+
       await FirebaseFirestore.instance.collection('donations').add({
         'donorUid': user.uid,
         'foodType': foodType == 'Other' ? customFoodType : foodType,
@@ -164,7 +175,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
         'quantityUnit': isProduce ? quantityUnit : null,
         'expiryDate':
             expiryDate != null ? Timestamp.fromDate(expiryDate!) : null,
-        'pickupAddress': pickupAddress,
+        'pickupAddress': pickupAddress!.toLowerCase(),
         'pickupUntil':
             pickupUntil != null
                 ? '${pickupUntil!.hour.toString().padLeft(2, '0')}:${pickupUntil!.minute.toString().padLeft(2, '0')}'
@@ -175,6 +186,7 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
         'checklist3': checklist3,
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'active',
+        'city': city,
       });
 
       ScaffoldMessenger.of(

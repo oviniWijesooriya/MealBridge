@@ -416,8 +416,9 @@ class DonorDashboardPage extends StatelessWidget {
                                           const SizedBox(width: 32),
                                           Expanded(
                                             flex: 1,
-                                            child: _NotificationsPanel(
-                                              notifications: notifications,
+                                            child: _DonorNotificationsPanel(
+                                              donorUid: user.uid,
+                                              allDonations: allDonations,
                                             ),
                                           ),
                                         ],
@@ -426,8 +427,9 @@ class DonorDashboardPage extends StatelessWidget {
                                         children: [
                                           _MainActionButton(),
                                           const SizedBox(height: 22),
-                                          _NotificationsPanel(
-                                            notifications: notifications,
+                                          _DonorNotificationsPanel(
+                                            donorUid: user.uid,
+                                            allDonations: allDonations,
                                           ),
                                           const SizedBox(height: 22),
                                           _ActiveDonationsPanel(
@@ -496,6 +498,154 @@ class DonorDashboardPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DonorNotificationsPanel extends StatelessWidget {
+  final String donorUid;
+  final List<QueryDocumentSnapshot> allDonations;
+  const _DonorNotificationsPanel({
+    required this.donorUid,
+    required this.allDonations,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Get all donation IDs for this donor
+    final donationIds = allDonations.map((doc) => doc.id).toList();
+
+    if (donationIds.isEmpty) {
+      return Card(
+        color: const Color(0xFFF4FFF6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+          child: Text("No notifications yet."),
+        ),
+      );
+    }
+
+    // Listen to all requests for this donor's donations
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('requests')
+              .where(
+                'donationId',
+                whereIn:
+                    donationIds.length > 10
+                        ? donationIds.sublist(0, 10) // Firestore whereIn max 10
+                        : donationIds,
+              )
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Card(
+            color: const Color(0xFFF4FFF6),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+        final requests = snapshot.data?.docs ?? [];
+        return Card(
+          color: const Color(0xFFF4FFF6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Food Requests",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF009933),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                requests.isEmpty
+                    ? Text("No new food requests yet.")
+                    : Column(
+                      children:
+                          requests.map((req) {
+                            final data = req.data() as Map<String, dynamic>;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.notifications,
+                                    color: Color(0xFF009933),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "New request for your donation: ${data['donationId']}",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Portions: ${data['portions'] ?? ''} | Method: ${data['pickupMethod'] ?? ''}",
+                                          style: TextStyle(fontSize: 14),
+                                        ),
+                                        if (data['specialInstructions'] !=
+                                                null &&
+                                            (data['specialInstructions']
+                                                    as String)
+                                                .isNotEmpty)
+                                          Text(
+                                            "Note: ${data['specialInstructions']}",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        Text(
+                                          data['createdAt'] != null
+                                              ? (data['createdAt'] as Timestamp)
+                                                  .toDate()
+                                                  .toString()
+                                              : "",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black45,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                    ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
