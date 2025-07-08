@@ -99,7 +99,7 @@ class _DonorWelcomeContent extends StatelessWidget {
             style: TextStyle(color: Color(0xFF009933)),
           ),
           onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/dashboard');
+            Navigator.of(context).pushReplacementNamed('/donor-dashboard');
           },
         ),
         SizedBox(height: 14),
