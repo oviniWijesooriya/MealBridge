@@ -51,305 +51,427 @@ class DonorDashboardPage extends StatelessWidget {
                 final profilePhotoUrl = userData['profilePhotoUrl'] ?? "";
                 final int totalMeals = userData['totalMeals'] ?? 0;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile & Stats
-                    Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 18),
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 24,
-                          horizontal: 24,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 36,
-                              backgroundImage:
-                                  profilePhotoUrl.isNotEmpty
-                                      ? NetworkImage(profilePhotoUrl)
-                                      : null,
-                              child:
-                                  profilePhotoUrl.isEmpty
-                                      ? Icon(
-                                        Icons.person,
-                                        size: 40,
-                                        color: Color(0xFF009933),
-                                      )
-                                      : null,
-                              backgroundColor: const Color(0xFFE8F5E9),
+                return StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('donations')
+                          .where('donorUid', isEqualTo: user.uid)
+                          .snapshots(),
+                  builder: (context, donationSnapshot) {
+                    if (donationSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    final allDonations = donationSnapshot.data?.docs ?? [];
+                    final activeDonations =
+                        allDonations
+                            .where(
+                              (doc) => (doc['status'] ?? '') != 'Picked Up',
+                            )
+                            .map(
+                              (doc) => {
+                                'item': doc['foodType'] ?? '',
+                                'quantity':
+                                    doc['quantity'] != null &&
+                                            doc['quantityUnit'] != null
+                                        ? '${doc['quantity']} ${doc['quantityUnit']}'
+                                        : (doc['servings'] != null
+                                            ? '${doc['servings']} servings'
+                                            : ''),
+                                'expiry':
+                                    doc['expiryDate'] != null
+                                        ? (doc['expiryDate'] as Timestamp)
+                                            .toDate()
+                                            .toString()
+                                            .split(' ')[0]
+                                        : '',
+                                'status': doc['status'] ?? '',
+                                'id': doc.id,
+                                'description': doc['description'] ?? '',
+                                'quantityUnit': doc['quantityUnit'],
+                                'servings': doc['servings'],
+                              },
+                            )
+                            .toList();
+
+                    final donationHistory =
+                        allDonations
+                            .where(
+                              (doc) => (doc['status'] ?? '') == 'Picked Up',
+                            )
+                            .map(
+                              (doc) => {
+                                'item': doc['foodType'] ?? '',
+                                'date':
+                                    doc['expiryDate'] != null
+                                        ? (doc['expiryDate'] as Timestamp)
+                                            .toDate()
+                                            .toString()
+                                            .split(' ')[0]
+                                        : '',
+                                'quantity':
+                                    doc['quantity'] != null &&
+                                            doc['quantityUnit'] != null
+                                        ? '${doc['quantity']} ${doc['quantityUnit']}'
+                                        : (doc['servings'] != null
+                                            ? '${doc['servings']} servings'
+                                            : ''),
+                                'status': doc['status'] ?? '',
+                                'servings': doc['servings'],
+                              },
+                            )
+                            .toList();
+
+                    // --- Auto-calculate total meals donated ---
+                    int totalMeals = 0;
+                    for (var d in donationHistory) {
+                      if (d['servings'] != null) {
+                        final s = d['servings'];
+                        if (s is int) {
+                          totalMeals += s;
+                        } else if (s is String) {
+                          final parsed = int.tryParse(s);
+                          if (parsed != null) totalMeals += parsed;
+                        }
+                      } else if (d['quantity'] != null) {
+                        final qStr = d['quantity'].toString().split(' ').first;
+                        final parsed = int.tryParse(qStr);
+                        if (parsed != null) totalMeals += parsed;
+                      }
+                    }
+                    // Update the user's totalMeals in Firestore if it differs
+                    final userDocRef = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid);
+                    if (userData['totalMeals'] != totalMeals) {
+                      userDocRef.update({'totalMeals': totalMeals});
+                    }
+
+                    final isWide = MediaQuery.of(context).size.width > 900;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Profile & Stats
+                        Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 18),
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 24,
+                              horizontal: 24,
                             ),
-                            const SizedBox(width: 18),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    donorName,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF006622),
-                                    ),
-                                  ),
-                                  Text(
-                                    donorType,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Color(0xFF009933),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  TextButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.settings, size: 18),
-                                    label: const Text("Profile Settings"),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Color(0xFF009933),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Total Meals Donated
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF009933),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 18,
-                                horizontal: 28,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    "Total Meals Donated",
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "$totalMeals",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 30,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Motivational Message
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 18),
-                      child: Card(
-                        color: const Color(0xFFE8F5E9),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.volunteer_activism,
-                                color: Color(0xFF009933),
-                                size: 28,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "Thank you for sharing your kindness! Every meal you donate helps bridge food surplus to those in need across Sri Lanka.",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[900],
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 36,
+                                  backgroundImage:
+                                      profilePhotoUrl.isNotEmpty
+                                          ? NetworkImage(profilePhotoUrl)
+                                          : null,
+                                  child:
+                                      profilePhotoUrl.isEmpty
+                                          ? Icon(
+                                            Icons.person,
+                                            size: 40,
+                                            color: Color(0xFF009933),
+                                          )
+                                          : null,
+                                  backgroundColor: const Color(0xFFE8F5E9),
+                                ),
+                                const SizedBox(width: 18),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        donorName,
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF006622),
+                                        ),
+                                      ),
+                                      Text(
+                                        donorType,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Color(0xFF009933),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(
+                                          Icons.settings,
+                                          size: 18,
+                                        ),
+                                        label: const Text("Profile Settings"),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Color(0xFF009933),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
+                                // Total Meals Donated
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF009933),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 18,
+                                    horizontal: 28,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        "Total Meals Donated",
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "$totalMeals",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    // Main Actions & Notifications + Donations
-                    StreamBuilder<QuerySnapshot>(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('donations')
-                              .where('donorUid', isEqualTo: user.uid)
-                              .snapshots(),
-                      builder: (context, donationSnapshot) {
-                        if (donationSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
-                        }
-                        final allDonations = donationSnapshot.data?.docs ?? [];
-                        final activeDonations =
-                            allDonations
-                                .where(
-                                  (doc) => (doc['status'] ?? '') != 'Picked Up',
-                                )
-                                .map(
-                                  (doc) => {
-                                    'item': doc['foodType'] ?? '',
-                                    'quantity':
-                                        doc['quantity'] != null &&
-                                                doc['quantityUnit'] != null
-                                            ? '${doc['quantity']} ${doc['quantityUnit']}'
-                                            : (doc['servings'] != null
-                                                ? '${doc['servings']} servings'
-                                                : ''),
-                                    'expiry':
-                                        doc['expiryDate'] != null
-                                            ? (doc['expiryDate'] as Timestamp)
-                                                .toDate()
-                                                .toString()
-                                                .split(' ')[0]
-                                            : '',
-                                    'status': doc['status'] ?? '',
-                                    'id': doc.id,
-                                    'description': doc['description'] ?? '',
-                                    'quantityUnit': doc['quantityUnit'],
-                                  },
-                                )
-                                .toList();
-
-                        final donationHistory =
-                            allDonations
-                                .where(
-                                  (doc) => (doc['status'] ?? '') == 'Picked Up',
-                                )
-                                .map(
-                                  (doc) => {
-                                    'item': doc['foodType'] ?? '',
-                                    'date':
-                                        doc['expiryDate'] != null
-                                            ? (doc['expiryDate'] as Timestamp)
-                                                .toDate()
-                                                .toString()
-                                                .split(' ')[0]
-                                            : '',
-                                    'quantity':
-                                        doc['quantity'] != null &&
-                                                doc['quantityUnit'] != null
-                                            ? '${doc['quantity']} ${doc['quantityUnit']}'
-                                            : (doc['servings'] != null
-                                                ? '${doc['servings']} servings'
-                                                : ''),
-                                    'status': doc['status'] ?? '',
-                                  },
-                                )
-                                .toList();
-
-                        final notifications =
-                            <Map<String, dynamic>>[]; // Placeholder
-
-                        final isWide = MediaQuery.of(context).size.width > 900;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            isWide
-                                ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 2,
-                                      child: Column(
-                                        children: [
-                                          _MainActionButton(),
-                                          const SizedBox(height: 22),
-                                          _ActiveDonationsPanel(
-                                            activeDonations: activeDonations,
-                                          ),
-                                        ],
+                        // Motivational Message
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 18),
+                          child: Card(
+                            color: const Color(0xFFE8F5E9),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(18.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.volunteer_activism,
+                                    color: Color(0xFF009933),
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      "Thank you for sharing your kindness! Every meal you donate helps bridge food surplus to those in need across Sri Lanka.",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey[900],
                                       ),
                                     ),
-                                    const SizedBox(width: 32),
-                                    Expanded(
-                                      flex: 1,
-                                      child: _NotificationsPanel(
-                                        notifications: notifications,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                                : Column(
-                                  children: [
-                                    _MainActionButton(),
-                                    const SizedBox(height: 22),
-                                    _NotificationsPanel(
-                                      notifications: notifications,
-                                    ),
-                                    const SizedBox(height: 22),
-                                    _ActiveDonationsPanel(
-                                      activeDonations: activeDonations,
-                                    ),
-                                  ],
-                                ),
-                            const SizedBox(height: 30),
-                            Text(
-                              "Donation History",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                  ),
+                                ],
                               ),
                             ),
-                            Card(
-                              margin: const EdgeInsets.symmetric(vertical: 12),
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: DataTable(
-                                columnSpacing: 18,
-                                columns: const [
-                                  DataColumn(label: Text("Item")),
-                                  DataColumn(label: Text("Date")),
-                                  DataColumn(label: Text("Quantity")),
-                                  DataColumn(label: Text("Status")),
-                                ],
-                                rows:
-                                    donationHistory
-                                        .map(
-                                          (d) => DataRow(
-                                            cells: [
-                                              DataCell(Text(d['item'] ?? '')),
-                                              DataCell(Text(d['date'] ?? '')),
-                                              DataCell(
-                                                Text(d['quantity'] ?? ''),
+                          ),
+                        ),
+
+                        // Main Actions & Notifications + Donations
+                        StreamBuilder<QuerySnapshot>(
+                          stream:
+                              FirebaseFirestore.instance
+                                  .collection('donations')
+                                  .where('donorUid', isEqualTo: user.uid)
+                                  .snapshots(),
+                          builder: (context, donationSnapshot) {
+                            if (donationSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            }
+                            final allDonations =
+                                donationSnapshot.data?.docs ?? [];
+                            final activeDonations =
+                                allDonations
+                                    .where(
+                                      (doc) =>
+                                          (doc['status'] ?? '') != 'Picked Up',
+                                    )
+                                    .map(
+                                      (doc) => {
+                                        'item': doc['foodType'] ?? '',
+                                        'quantity':
+                                            doc['quantity'] != null &&
+                                                    doc['quantityUnit'] != null
+                                                ? '${doc['quantity']} ${doc['quantityUnit']}'
+                                                : (doc['servings'] != null
+                                                    ? '${doc['servings']} servings'
+                                                    : ''),
+                                        'expiry':
+                                            doc['expiryDate'] != null
+                                                ? (doc['expiryDate']
+                                                        as Timestamp)
+                                                    .toDate()
+                                                    .toString()
+                                                    .split(' ')[0]
+                                                : '',
+                                        'status': doc['status'] ?? '',
+                                        'id': doc.id,
+                                        'description': doc['description'] ?? '',
+                                        'quantityUnit': doc['quantityUnit'],
+                                      },
+                                    )
+                                    .toList();
+
+                            final donationHistory =
+                                allDonations
+                                    .where(
+                                      (doc) =>
+                                          (doc['status'] ?? '') == 'Picked Up',
+                                    )
+                                    .map(
+                                      (doc) => {
+                                        'item': doc['foodType'] ?? '',
+                                        'date':
+                                            doc['expiryDate'] != null
+                                                ? (doc['expiryDate']
+                                                        as Timestamp)
+                                                    .toDate()
+                                                    .toString()
+                                                    .split(' ')[0]
+                                                : '',
+                                        'quantity':
+                                            doc['quantity'] != null &&
+                                                    doc['quantityUnit'] != null
+                                                ? '${doc['quantity']} ${doc['quantityUnit']}'
+                                                : (doc['servings'] != null
+                                                    ? '${doc['servings']} servings'
+                                                    : ''),
+                                        'status': doc['status'] ?? '',
+                                      },
+                                    )
+                                    .toList();
+
+                            final notifications =
+                                <Map<String, dynamic>>[]; // Placeholder
+
+                            final isWide =
+                                MediaQuery.of(context).size.width > 900;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                isWide
+                                    ? Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: Column(
+                                            children: [
+                                              _MainActionButton(),
+                                              const SizedBox(height: 22),
+                                              _ActiveDonationsPanel(
+                                                activeDonations:
+                                                    activeDonations,
                                               ),
-                                              DataCell(Text(d['status'] ?? '')),
                                             ],
                                           ),
-                                        )
-                                        .toList(),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                                        ),
+                                        const SizedBox(width: 32),
+                                        Expanded(
+                                          flex: 1,
+                                          child: _NotificationsPanel(
+                                            notifications: notifications,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                    : Column(
+                                      children: [
+                                        _MainActionButton(),
+                                        const SizedBox(height: 22),
+                                        _NotificationsPanel(
+                                          notifications: notifications,
+                                        ),
+                                        const SizedBox(height: 22),
+                                        _ActiveDonationsPanel(
+                                          activeDonations: activeDonations,
+                                        ),
+                                      ],
+                                    ),
+                                const SizedBox(height: 30),
+                                Text(
+                                  "Donation History",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: DataTable(
+                                    columnSpacing: 18,
+                                    columns: const [
+                                      DataColumn(label: Text("Item")),
+                                      DataColumn(label: Text("Date")),
+                                      DataColumn(label: Text("Quantity")),
+                                      DataColumn(label: Text("Status")),
+                                    ],
+                                    rows:
+                                        donationHistory
+                                            .map(
+                                              (d) => DataRow(
+                                                cells: [
+                                                  DataCell(
+                                                    Text(d['item'] ?? ''),
+                                                  ),
+                                                  DataCell(
+                                                    Text(d['date'] ?? ''),
+                                                  ),
+                                                  DataCell(
+                                                    Text(d['quantity'] ?? ''),
+                                                  ),
+                                                  DataCell(
+                                                    Text(d['status'] ?? ''),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                            .toList(),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
