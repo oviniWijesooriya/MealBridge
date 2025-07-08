@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../main.dart';
 import '../widgets/mobile_nav_drawer.dart';
 
@@ -12,6 +14,7 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
   final _locationController = TextEditingController();
   String? _enteredLocation;
   bool _isLoading = false;
+  String? _locationError;
 
   @override
   void dispose() {
@@ -22,8 +25,72 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
   void _submitLocation() {
     setState(() {
       _enteredLocation = _locationController.text.trim();
+      _locationError = null;
     });
-    // Optionally trigger a geocoding lookup or update food list
+  }
+
+  Future<void> _useMyLocation() async {
+    setState(() {
+      _isLoading = true;
+      _locationError = null;
+    });
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _locationError =
+              "Location services are disabled. Please enable them in your device settings.";
+          _isLoading = false;
+        });
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _locationError =
+                "Location permissions are denied. Please allow location access.";
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _locationError =
+              "Location permissions are permanently denied. Please enable them in your browser or device settings.";
+          _isLoading = false;
+        });
+        return;
+      }
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      String? city = placemarks.isNotEmpty ? placemarks[0].locality : null;
+      if (city == null || city.isEmpty) {
+        setState(() {
+          _locationError =
+              "Could not determine your city. Please enter it manually.";
+          _isLoading = false;
+        });
+        return;
+      }
+      setState(() {
+        _locationController.text = city;
+        _enteredLocation = city;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _locationError = "Failed to get location: $e";
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -42,7 +109,6 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Header
               Text(
                 "Welcome! Find a Meal Near You",
                 style: TextStyle(
@@ -54,7 +120,6 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 18),
-              // Location entry
               Card(
                 elevation: 1,
                 shape: RoundedRectangleBorder(
@@ -113,34 +178,28 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
                               "Use My Location",
                               style: TextStyle(color: Color(0xFF009933)),
                             ),
-                            onPressed: () {
-                              // TODO: Implement geolocation
-                            },
+                            onPressed: _isLoading ? null : _useMyLocation,
                           ),
                         ],
                       ),
+                      if (_locationError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            _locationError!,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               SizedBox(height: 24),
-              // Food Listings
               Expanded(
                 child:
-                    _enteredLocation == null
-                        ? Center(
-                          child: Text(
-                            "Enter your location to see available food donations near you.",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                        : _isLoading
+                    _isLoading
                         ? Center(child: CircularProgressIndicator())
-                        : _FoodDonationsList(location: _enteredLocation!),
+                        : _FoodDonationsList(location: _enteredLocation),
               ),
             ],
           ),
@@ -151,19 +210,31 @@ class _RecipientFindFoodPageState extends State<RecipientFindFoodPage> {
 }
 
 class _FoodDonationsList extends StatelessWidget {
-  final String location;
+  final String? location;
   const _FoodDonationsList({required this.location});
 
   @override
   Widget build(BuildContext context) {
-    // In a real app, you would use location to filter/sort donations by distance.
-    // Here, we show all active donations for demo.
-    return StreamBuilder<QuerySnapshot>(
-      stream:
+    Stream<QuerySnapshot> stream;
+    if (location != null && location!.isNotEmpty) {
+      // Filter by city (case-insensitive)
+      stream =
           FirebaseFirestore.instance
               .collection('donations')
               .where('status', isEqualTo: 'active')
-              .snapshots(),
+              .where('city', isEqualTo: location!.toLowerCase())
+              .snapshots();
+    } else {
+      // Show all active donations
+      stream =
+          FirebaseFirestore.instance
+              .collection('donations')
+              .where('status', isEqualTo: 'active')
+              .snapshots();
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -271,7 +342,17 @@ class _FoodDonationsList extends StatelessWidget {
                           data['pickupAddress'] ?? '',
                           style: TextStyle(fontSize: 15),
                         ),
-                        // TODO: Show distance if available
+                        if (data['city'] != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              "(${data['city']})",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     SizedBox(height: 10),
