@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -365,8 +366,32 @@ class _FoodDonationsList extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () {
-                          // TODO: Show request modal
+                        onPressed: () async {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Please log in to request food."),
+                              ),
+                            );
+                            return;
+                          }
+                          final maxPortions =
+                              data['servings'] ?? data['quantity'] ?? 1;
+                          final pickupAddress = data['pickupAddress'] ?? '';
+                          final availableUntil = data['pickupUntil'] ?? '';
+                          final donationId = donations[i].id;
+                          showDialog(
+                            context: context,
+                            builder:
+                                (context) => RequestFoodDialog(
+                                  donationId: donationId,
+                                  maxPortions:
+                                      maxPortions is int ? maxPortions : 1,
+                                  pickupAddress: pickupAddress,
+                                  availableUntil: availableUntil,
+                                ),
+                          );
                         },
                         child: Text("Request Food"),
                       ),
@@ -378,6 +403,138 @@ class _FoodDonationsList extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class RequestFoodDialog extends StatefulWidget {
+  final String donationId;
+  final int maxPortions;
+  final String pickupAddress;
+  final String availableUntil;
+  const RequestFoodDialog({
+    required this.donationId,
+    required this.maxPortions,
+    required this.pickupAddress,
+    required this.availableUntil,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<RequestFoodDialog> createState() => _RequestFoodDialogState();
+}
+
+class _RequestFoodDialogState extends State<RequestFoodDialog> {
+  int portions = 1;
+  String pickupMethod = "Direct Pickup";
+  String? specialInstructions;
+  bool _isLoading = false;
+  String? _error;
+
+  Future<void> _submitRequest() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() => _error = "You must be logged in.");
+        return;
+      }
+      await FirebaseFirestore.instance.collection('requests').add({
+        'donationId': widget.donationId,
+        'recipientUid': user.uid,
+        'portions': portions,
+        'pickupMethod': pickupMethod,
+        'specialInstructions': specialInstructions,
+        'status': 'Pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Request submitted!")));
+    } catch (e) {
+      setState(() => _error = "Failed to request: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Request This Food Donation"),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("How many portions do you need?"),
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.remove),
+                  onPressed:
+                      portions > 1 ? () => setState(() => portions--) : null,
+                ),
+                Text("$portions", style: TextStyle(fontSize: 18)),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed:
+                      portions < widget.maxPortions
+                          ? () => setState(() => portions++)
+                          : null,
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Text("Pickup Method:"),
+            RadioListTile(
+              value: "Direct Pickup",
+              groupValue: pickupMethod,
+              onChanged: (v) => setState(() => pickupMethod = v as String),
+              title: Text("Direct Pickup"),
+            ),
+            RadioListTile(
+              value: "Volunteer Mediated Pickup",
+              groupValue: pickupMethod,
+              onChanged: (v) => setState(() => pickupMethod = v as String),
+              title: Text("Volunteer Mediated Pickup"),
+            ),
+            SizedBox(height: 8),
+            Text("Pickup Location: ${widget.pickupAddress}"),
+            Text("Available until: ${widget.availableUntil}"),
+            SizedBox(height: 8),
+            TextFormField(
+              decoration: InputDecoration(labelText: "Special Instructions"),
+              onChanged: (v) => specialInstructions = v,
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(_error!, style: TextStyle(color: Colors.red)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submitRequest,
+          child:
+              _isLoading
+                  ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : Text("Confirm Request"),
+        ),
+      ],
     );
   }
 }
