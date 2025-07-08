@@ -330,57 +330,68 @@ class _DonateFoodFormPageState extends State<DonateFoodFormPage> {
       isProduce: isProduce,
     );
 
-    return kIsWeb
-        ? Scaffold(
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(56),
-            child: MealBridgeHeader(isWeb: true),
-          ),
-          body: Center(
-            child: SingleChildScrollView(
-              child: Container(
-                constraints: BoxConstraints(maxWidth: 520),
-                padding: EdgeInsets.symmetric(vertical: 36, horizontal: 22),
-                child: Column(
-                  children: [
-                    if (errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Text(
-                          errorMessage!,
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    content,
-                  ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Always go to dashboard instead of homepage
+        Navigator.of(context).pushReplacementNamed('/donor-dashboard');
+        return false; // Prevent default back navigation
+      },
+      child:
+          kIsWeb
+              ? Scaffold(
+                appBar: PreferredSize(
+                  preferredSize: Size.fromHeight(56),
+                  child: MealBridgeHeader(isWeb: true),
                 ),
-              ),
-            ),
-          ),
-        )
-        : Scaffold(
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(56),
-            child: MealBridgeHeader(isWeb: false),
-          ),
-          endDrawer: MobileNavDrawer(),
-          body: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(vertical: 22, horizontal: 12),
-            child: Column(
-              children: [
-                if (errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Text(
-                      errorMessage!,
-                      style: TextStyle(color: Colors.red),
+                body: Center(
+                  child: SingleChildScrollView(
+                    child: Container(
+                      constraints: BoxConstraints(maxWidth: 520),
+                      padding: EdgeInsets.symmetric(
+                        vertical: 36,
+                        horizontal: 22,
+                      ),
+                      child: Column(
+                        children: [
+                          if (errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: Text(
+                                errorMessage!,
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          content,
+                        ],
+                      ),
                     ),
                   ),
-                content,
-              ],
-            ),
-          ),
-        );
+                ),
+              )
+              : Scaffold(
+                appBar: PreferredSize(
+                  preferredSize: Size.fromHeight(56),
+                  child: MealBridgeHeader(isWeb: false),
+                ),
+                endDrawer: MobileNavDrawer(),
+                body: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(vertical: 22, horizontal: 12),
+                  child: Column(
+                    children: [
+                      if (errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Text(
+                            errorMessage!,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      content,
+                    ],
+                  ),
+                ),
+              ),
+    );
   }
 }
 

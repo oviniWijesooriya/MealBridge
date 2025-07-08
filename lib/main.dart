@@ -14,6 +14,7 @@ import 'pages/donor_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'pages/register.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -152,11 +153,33 @@ class MealBridgeWebApp extends StatelessWidget {
         '/donor-type-selection': (context) => DonorTypeSelectionPage(),
         '/agreement': (context) => CommunityAgreementPage(),
         '/donor-welcome': (context) => DonorWelcomePage(),
-        '/donate-food': (context) => DonateFoodFormPage(),
+        // '/donate-food': (context) => DonateFoodFormPage(),
         '/login': (context) => CommonLoginPage(),
-        '/donor-dashboard': (context) => DonorDashboardPage(),
+        // '/donor-dashboard': (context) => DonorDashboardPage(),
         // '/recipient-dashboard': (context) => RecipientDashboardPage(),
         // '/volunteer-dashboard': (context) => VolunteerDashboardPage(),
+        // '/admin-dashboard': (context) => AdminDashboardPage(),
+      },
+      onGenerateRoute: (settings) {
+        final user = FirebaseAuth.instance.currentUser;
+        // Guard the dashboard route
+        if (settings.name == '/donor-dashboard') {
+          if (user == null) {
+            // Not logged in: redirect to login
+            return MaterialPageRoute(builder: (_) => CommonLoginPage());
+          } else {
+            // Logged in: show dashboard
+            return MaterialPageRoute(builder: (_) => DonorDashboardPage());
+          }
+        }
+        if (settings.name == '/donate-food') {
+          if (user == null) {
+            return MaterialPageRoute(builder: (_) => CommonLoginPage());
+          } else {
+            return MaterialPageRoute(builder: (_) => DonateFoodFormPage());
+          }
+        }
+        return null; // Fallback to routes map
       },
       debugShowCheckedModeBanner: false,
     );
