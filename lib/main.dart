@@ -15,6 +15,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'pages/register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'pages/recipient_signup_form.dart';
+import 'pages/recipient_dashboard.dart';
+import 'pages/recipient_welcome.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -156,9 +159,11 @@ class MealBridgeWebApp extends StatelessWidget {
         // '/donate-food': (context) => DonateFoodFormPage(),
         '/login': (context) => CommonLoginPage(),
         // '/donor-dashboard': (context) => DonorDashboardPage(),
-        // '/recipient-dashboard': (context) => RecipientDashboardPage(),
+        '/recipient-dashboard': (context) => RecipientFindFoodPage(),
         // '/volunteer-dashboard': (context) => VolunteerDashboardPage(),
         // '/admin-dashboard': (context) => AdminDashboardPage(),
+        '/recipient-welcome': (context) => RecipientWelcomePage(),
+        '/recipient-register': (context) => RecipientRegisterPage(),
       },
       onGenerateRoute: (settings) {
         final user = FirebaseAuth.instance.currentUser;
@@ -204,6 +209,9 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/donor-welcome': (context) => DonorWelcomePage(),
         '/donate-food': (context) => DonateFoodFormPage(),
         '/login': (context) => CommonLoginPage(),
+        '/recipient-welcome': (context) => RecipientWelcomePage(),
+        '/recipient-register': (context) => RecipientRegisterPage(),
+        '/recipient-dashboard': (context) => RecipientFindFoodPage(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -286,7 +294,7 @@ class HomePage extends StatelessWidget {
                           'I need food',
                           Icons.restaurant_menu,
                           Colors.orange,
-                          '/find-food',
+                          '/recipient-welcome',
                         ),
                         SizedBox(width: 32),
                         _ActionButtonWeb(
@@ -310,7 +318,7 @@ class HomePage extends StatelessWidget {
                           'I need food',
                           Icons.restaurant_menu,
                           Colors.orange,
-                          '/find-food',
+                          '/recipient-welcome',
                         ),
                         SizedBox(height: 12),
                         _ActionButtonMobile(
