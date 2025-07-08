@@ -9,7 +9,6 @@ class DonorDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // You may want to redirect to login or show a loading/error state
       return Scaffold(
         appBar: DashboardHeader(
           role: "Donor",
@@ -228,6 +227,8 @@ class DonorDashboardPage extends StatelessWidget {
                                             : '',
                                     'status': doc['status'] ?? '',
                                     'id': doc.id,
+                                    'description': doc['description'] ?? '',
+                                    'quantityUnit': doc['quantityUnit'],
                                   },
                                 )
                                 .toList();
@@ -259,7 +260,6 @@ class DonorDashboardPage extends StatelessWidget {
                                 )
                                 .toList();
 
-                        // Notifications: You can implement a notifications subcollection or logic as needed.
                         final notifications =
                             <Map<String, dynamic>>[]; // Placeholder
 
@@ -478,6 +478,155 @@ class _NotificationsPanel extends StatelessWidget {
   }
 }
 
+class EditDonationDialog extends StatefulWidget {
+  final String donationId;
+  final Map<String, dynamic> initialData;
+
+  const EditDonationDialog({
+    required this.donationId,
+    required this.initialData,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<EditDonationDialog> createState() => _EditDonationDialogState();
+}
+
+class _EditDonationDialogState extends State<EditDonationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController descriptionController;
+  late TextEditingController quantityController;
+  late TextEditingController expiryController;
+  String? status;
+  String? quantityUnit;
+
+  static const allowedStatuses = [
+    'Awaiting Pickup',
+    'Matched with Recipient',
+    'Picked Up',
+  ];
+  static const allowedUnits = [
+    'kg',
+    'grams',
+    'pieces',
+    'bunches',
+    'packs',
+    'litres',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    descriptionController = TextEditingController(
+      text: widget.initialData['description'] ?? '',
+    );
+    quantityController = TextEditingController(
+      text: widget.initialData['quantity']?.toString() ?? '',
+    );
+    expiryController = TextEditingController(
+      text: widget.initialData['expiry'] ?? '',
+    );
+    // Ensure status and unit are valid for dropdowns
+    status =
+        allowedStatuses.contains(widget.initialData['status'])
+            ? widget.initialData['status']
+            : allowedStatuses.first;
+    quantityUnit =
+        allowedUnits.contains(widget.initialData['quantityUnit'])
+            ? widget.initialData['quantityUnit']
+            : allowedUnits.first;
+  }
+
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    quantityController.dispose();
+    expiryController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateDonation() async {
+    if (_formKey.currentState?.validate() != true) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('donations')
+          .doc(widget.donationId)
+          .update({
+            'description': descriptionController.text,
+            'quantity': double.tryParse(quantityController.text),
+            'quantityUnit': quantityUnit,
+            // For expiry, you may want to convert to Timestamp if you use DatePicker
+            'status': status,
+          });
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Donation updated!')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Edit Donation'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextFormField(
+                controller: descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: quantityController,
+                decoration: InputDecoration(labelText: 'Quantity'),
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              DropdownButtonFormField<String>(
+                value: quantityUnit,
+                items:
+                    allowedUnits
+                        .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                        .toList(),
+                onChanged: (val) => setState(() => quantityUnit = val),
+                decoration: InputDecoration(labelText: 'Unit'),
+              ),
+              TextFormField(
+                controller: expiryController,
+                decoration: InputDecoration(labelText: 'Expiry Date'),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              DropdownButtonFormField<String>(
+                value: status,
+                items:
+                    allowedStatuses
+                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                        .toList(),
+                onChanged: (val) => setState(() => status = val),
+                decoration: InputDecoration(labelText: 'Status'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(onPressed: _updateDonation, child: Text('Update')),
+      ],
+    );
+  }
+}
+
 class _ActiveDonationsPanel extends StatelessWidget {
   final List<Map<String, dynamic>> activeDonations;
   const _ActiveDonationsPanel({required this.activeDonations});
@@ -533,7 +682,14 @@ class _ActiveDonationsPanel extends StatelessWidget {
                                 ),
                                 trailing: OutlinedButton(
                                   onPressed: () {
-                                    // TODO: Edit donation
+                                    showDialog(
+                                      context: context,
+                                      builder:
+                                          (context) => EditDonationDialog(
+                                            donationId: donation['id'],
+                                            initialData: donation,
+                                          ),
+                                    );
                                   },
                                   style: OutlinedButton.styleFrom(
                                     side: const BorderSide(
