@@ -18,6 +18,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/recipient_signup_form.dart';
 import 'pages/recipient_dashboard.dart';
 import 'pages/recipient_welcome.dart';
+import 'pages/recipient_dashboard_new.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -159,7 +160,8 @@ class MealBridgeWebApp extends StatelessWidget {
         // '/donate-food': (context) => DonateFoodFormPage(),
         '/login': (context) => CommonLoginPage(),
         // '/donor-dashboard': (context) => DonorDashboardPage(),
-        '/recipient-dashboard': (context) => RecipientFindFoodPage(),
+        '/recipient-find-food': (context) => RecipientFindFoodPage(),
+        '/recipient-dashboard': (context) => RecipientDashboardPage(),
         // '/volunteer-dashboard': (context) => VolunteerDashboardPage(),
         // '/admin-dashboard': (context) => AdminDashboardPage(),
         '/recipient-welcome': (context) => RecipientWelcomePage(),
@@ -211,7 +213,8 @@ class MealBridgeMobileApp extends StatelessWidget {
         '/login': (context) => CommonLoginPage(),
         '/recipient-welcome': (context) => RecipientWelcomePage(),
         '/recipient-register': (context) => RecipientRegisterPage(),
-        '/recipient-dashboard': (context) => RecipientFindFoodPage(),
+        '/recipient-find-food': (context) => RecipientFindFoodPage(),
+        '/recipient-dashboard': (context) => RecipientDashboardPage(),
       },
       debugShowCheckedModeBanner: false,
     );

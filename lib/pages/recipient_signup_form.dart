@@ -44,10 +44,11 @@ class _RecipientRegisterPageState extends State<RecipientRegisterPage> {
       final auth = FirebaseAuth.instance;
       final firestore = FirebaseFirestore.instance;
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-        email: "$username@mealbridge.lk", // Use username as email for demo
+        email: "$username@gmail.com", // Use username as email for demo
         password: password!,
       );
       await firestore.collection('users').doc(userCredential.user!.uid).set({
+        'uid': userCredential.user!.uid,
         'fullName': fullName,
         'mobile': mobile,
         'address': address,
