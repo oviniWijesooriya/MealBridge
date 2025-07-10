@@ -13,12 +13,11 @@ import 'pages/login-2.dart';
 import 'pages/donor_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'pages/register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/recipient_signup_form.dart';
-import 'pages/recipient_dashboard.dart';
+import 'pages/recipient_find_food.dart';
 import 'pages/recipient_welcome.dart';
-import 'pages/recipient_dashboard_new.dart';
+import 'pages/recipient_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
