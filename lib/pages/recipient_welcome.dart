@@ -119,8 +119,7 @@ class RecipientWelcomePage extends StatelessWidget {
                     "I already have an account (Login)",
                     style: TextStyle(color: Color(0xFF009933)),
                   ),
-                  onPressed:
-                      () => Navigator.pushNamed(context, '/recipient-login'),
+                  onPressed: () => Navigator.pushNamed(context, '/login'),
                 ),
               ),
               SizedBox(height: 32),
