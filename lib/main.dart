@@ -19,6 +19,7 @@ import 'pages/recipient_find_food.dart';
 import 'pages/recipient_welcome.dart';
 import 'pages/recipient_dashboard.dart';
 import 'pages/volunteer_signup_page.dart';
+import 'pages/volunteer_welcome_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,6 +168,7 @@ class MealBridgeWebApp extends StatelessWidget {
         '/recipient-welcome': (context) => RecipientWelcomePage(),
         '/recipient-register': (context) => RecipientRegisterPage(),
         '/volunteer-signup': (context) => VolunteerSignUpPage(),
+        '/volunteer-welcome': (context) => VolunteerWelcomePage(),
       },
       onGenerateRoute: (settings) {
         final user = FirebaseAuth.instance.currentUser;
@@ -305,7 +307,7 @@ class HomePage extends StatelessWidget {
                           'Volunteer with us',
                           Icons.group,
                           Colors.blue,
-                          '/impact',
+                          '/volunteer-signup',
                         ),
                       ],
                     )
@@ -329,7 +331,7 @@ class HomePage extends StatelessWidget {
                           'Volunteer with us',
                           Icons.group,
                           Colors.blue,
-                          '/impact',
+                          '/volunteer-signup',
                         ),
                       ],
                     ),
