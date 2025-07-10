@@ -444,7 +444,7 @@ class _RequestFoodDialogState extends State<RequestFoodDialog> {
       }
       await FirebaseFirestore.instance.collection('requests').add({
         'donationId': widget.donationId,
-        'recipientUid': user.uid,
+        'recipientUid': FirebaseAuth.instance.currentUser!.uid,
         'portions': portions,
         'pickupMethod': pickupMethod,
         'specialInstructions': specialInstructions,

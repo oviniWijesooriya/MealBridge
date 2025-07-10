@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/mobile_nav_drawer.dart';
+import '../widgets/recipient_request_section.dart';
 
 class RecipientDashboardPage extends StatelessWidget {
   @override
@@ -43,7 +44,7 @@ class RecipientDashboardPage extends StatelessWidget {
                 stream:
                     FirebaseFirestore.instance
                         .collection('users')
-                        .doc(user.uid)
+                        .doc(FirebaseAuth.instance.currentUser!.uid)
                         .snapshots(),
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
@@ -193,11 +194,9 @@ class RecipientDashboardPage extends StatelessWidget {
                                     flex: 2,
                                     child: Column(
                                       children: [
-                                        _MainActionButtons(),
+                                        _MainActionButtons(user: user),
                                         const SizedBox(height: 22),
-                                        _RecipientRequestsSection(
-                                          userId: user.uid,
-                                        ),
+                                        MyRequestsSection(userId: user.uid),
                                       ],
                                     ),
                                   ),
@@ -212,13 +211,13 @@ class RecipientDashboardPage extends StatelessWidget {
                               )
                               : Column(
                                 children: [
-                                  _MainActionButtons(),
+                                  _MainActionButtons(user: user),
                                   const SizedBox(height: 22),
                                   _RecipientNotificationsPanel(
                                     userId: user.uid,
                                   ),
                                   const SizedBox(height: 22),
-                                  _RecipientRequestsSection(userId: user.uid),
+                                  MyRequestsSection(userId: user.uid),
                                 ],
                               );
                         },
@@ -266,6 +265,9 @@ class RecipientDashboardPage extends StatelessWidget {
 }
 
 class _MainActionButtons extends StatelessWidget {
+  final User user;
+  const _MainActionButtons({required this.user});
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -279,11 +281,15 @@ class _MainActionButtons extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              elevation: 2,
             ),
             icon: Icon(Icons.fastfood, size: 26),
             label: Text("Browse Available Food"),
             onPressed:
-                () => Navigator.pushNamed(context, '/recipient-find-food'),
+                () => Navigator.pushReplacementNamed(
+                  context,
+                  '/recipient-find-food',
+                ),
           ),
         ),
         SizedBox(width: 16),
@@ -296,11 +302,14 @@ class _MainActionButtons extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              elevation: 2,
             ),
             icon: Icon(Icons.assignment, size: 26),
             label: Text("My Requests"),
-            onPressed:
-                () => Navigator.pushNamed(context, '/recipient-requests'),
+            onPressed: () {
+              // Optionally, scroll to MyRequestsSection or navigate to a separate page
+              // For now, do nothing (section is below)
+            },
           ),
         ),
       ],
@@ -318,8 +327,8 @@ class _RecipientNotificationsPanel extends StatelessWidget {
       stream:
           FirebaseFirestore.instance
               .collection('users')
-              .doc(userId)
-              .collection('notifications')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .collection('requests')
               .orderBy('createdAt', descending: true)
               .limit(10)
               .snapshots(),
@@ -411,11 +420,12 @@ class _RecipientRequestsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return StreamBuilder<QuerySnapshot>(
       stream:
           FirebaseFirestore.instance
               .collection('requests')
-              .where('recipientUid', isEqualTo: userId)
+              .where('recipientUid', isEqualTo: user?.uid)
               .orderBy('createdAt', descending: true)
               .snapshots(),
       builder: (context, snapshot) {
