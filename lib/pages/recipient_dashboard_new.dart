@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/dashboard_header.dart';
 import '../widgets/mobile_nav_drawer.dart';
-import '../main.dart';
+import '../widgets/recipient_request_section.dart';
 
 class RecipientDashboardPage extends StatelessWidget {
   @override
@@ -10,200 +11,308 @@ class RecipientDashboardPage extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text("Recipient Dashboard"),
-          backgroundColor: Color(0xFF009933),
+        appBar: DashboardHeader(
+          role: "Recipient",
+          onProfile: () {},
+          onLogout: () {},
         ),
         body: Center(child: Text("Please log in to view your dashboard.")),
       );
     }
 
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56),
-        child: MealBridgeHeader(isWeb: true, title: "Recipient Dashboard"),
-      ),
-      endDrawer: MobileNavDrawer(),
-      backgroundColor: Color(0xFFF6F8FA),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream:
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .snapshots(),
-        builder: (context, userSnapshot) {
-          if (userSnapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-            return Center(child: Text("Profile not found."));
-          }
-          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          final name = userData['fullName'] ?? user.email ?? "Recipient";
-          final address = userData['address'] ?? "";
-          final profilePhotoUrl = userData['profilePhotoUrl'] ?? "";
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF6F8FA),
+        appBar: DashboardHeader(
+          role: "Recipient",
+          onProfile: () {
+            // TODO: Profile settings
+          },
+          onLogout: () async {
+            await FirebaseAuth.instance.signOut();
+            Navigator.of(context).pushReplacementNamed('/login');
+          },
+        ),
+        endDrawer: MobileNavDrawer(),
+        body: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              margin: const EdgeInsets.symmetric(vertical: 32, horizontal: 8),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(FirebaseAuth.instance.currentUser!.uid)
+                        .snapshots(),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                    return Center(child: Text("Profile not found."));
+                  }
+                  final userData =
+                      userSnapshot.data!.data() as Map<String, dynamic>;
+                  final name =
+                      userData['fullName'] ?? user.email ?? "Recipient";
+                  final address = userData['address'] ?? "";
+                  final profilePhotoUrl = userData['profilePhotoUrl'] ?? "";
 
-          return ListView(
-            padding: EdgeInsets.all(24),
-            children: [
-              // Welcome & Profile Section
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Row(
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundImage:
-                            profilePhotoUrl.isNotEmpty
-                                ? NetworkImage(profilePhotoUrl)
-                                : null,
-                        child:
-                            profilePhotoUrl.isEmpty
-                                ? Icon(
-                                  Icons.person,
-                                  size: 36,
+                      // Profile & Welcome
+                      Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 24,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundImage:
+                                    profilePhotoUrl.isNotEmpty
+                                        ? NetworkImage(profilePhotoUrl)
+                                        : null,
+                                child:
+                                    profilePhotoUrl.isEmpty
+                                        ? Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Color(0xFF009933),
+                                        )
+                                        : null,
+                                backgroundColor: const Color(0xFFE8F5E9),
+                              ),
+                              const SizedBox(width: 18),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Welcome, $name!",
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF006622),
+                                      ),
+                                    ),
+                                    Text(
+                                      address,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        // TODO: Profile settings
+                                      },
+                                      icon: const Icon(
+                                        Icons.settings,
+                                        size: 18,
+                                      ),
+                                      label: const Text("Profile Settings"),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Color(0xFF009933),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.logout,
                                   color: Color(0xFF009933),
-                                )
-                                : null,
-                        backgroundColor: Color(0xFFE8F5E9),
-                      ),
-                      SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Welcome, $name!",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF006622),
+                                ),
+                                tooltip: "Logout",
+                                onPressed: () async {
+                                  await FirebaseAuth.instance.signOut();
+                                  Navigator.of(
+                                    context,
+                                  ).pushReplacementNamed('/login');
+                                },
                               ),
-                            ),
-                            Text(
-                              address,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                // TODO: Profile settings
-                              },
-                              icon: Icon(Icons.settings, size: 18),
-                              label: Text("Profile Settings"),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Color(0xFF009933),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 24),
-              // Main Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF009933),
-                        minimumSize: Size(double.infinity, 54),
-                        textStyle: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      // Motivational Message
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: Card(
+                          color: const Color(0xFFE8F5E9),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(18.0),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.volunteer_activism,
+                                  color: Color(0xFF009933),
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    "Here’s how you can access meals today. Thank you for being part of our community!",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[900],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+                      ),
+                      // Main Actions & Notifications + Requests
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth > 900;
+                          return isWide
+                              ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      children: [
+                                        _MainActionButtons(user: user),
+                                        const SizedBox(height: 22),
+                                        MyRequestsSection(userId: user.uid),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    flex: 1,
+                                    child: _RecipientNotificationsPanel(
+                                      userId: user.uid,
+                                    ),
+                                  ),
+                                ],
+                              )
+                              : Column(
+                                children: [
+                                  _MainActionButtons(user: user),
+                                  const SizedBox(height: 22),
+                                  _RecipientNotificationsPanel(
+                                    userId: user.uid,
+                                  ),
+                                  const SizedBox(height: 22),
+                                  MyRequestsSection(userId: user.uid),
+                                ],
+                              );
+                        },
+                      ),
+                      const SizedBox(height: 30),
+                      // Community & Impact (optional)
+                      Card(
+                        color: Color(0xFFE8F5E9),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      icon: Icon(Icons.fastfood, size: 26),
-                      label: Text("Browse Available Food"),
-                      onPressed:
-                          () => Navigator.pushNamed(
-                            context,
-                            '/recipient-find-food',
-                          ),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF9E1B),
-                        minimumSize: Size(double.infinity, 54),
-                        textStyle: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: Icon(Icons.assignment, size: 26),
-                      label: Text("My Requests"),
-                      onPressed:
-                          () => Navigator.pushNamed(
-                            context,
-                            '/recipient-requests',
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-              // Notifications Panel
-              _RecipientNotificationsPanel(userId: user.uid),
-              SizedBox(height: 24),
-              // My Requests Section
-              Text(
-                "My Requests",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              _RecipientRequestsSection(userId: user.uid),
-              SizedBox(height: 24),
-              // Community & Impact (optional)
-              Card(
-                color: Color(0xFFE8F5E9),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.emoji_food_beverage,
-                        color: Color(0xFF009933),
-                        size: 32,
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "You’ve received meals through MealBridge. Thank you for being part of our community!",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF006622),
+                        child: Padding(
+                          padding: EdgeInsets.all(18),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.emoji_food_beverage,
+                                color: Color(0xFF009933),
+                                size: 32,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "You’ve received meals through MealBridge. Thank you for being part of our community!",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF006622),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
-                  ),
-                ),
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _MainActionButtons extends StatelessWidget {
+  final User user;
+  const _MainActionButtons({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF009933),
+              minimumSize: Size(double.infinity, 54),
+              textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+            icon: Icon(Icons.fastfood, size: 26),
+            label: Text("Browse Available Food"),
+            onPressed:
+                () => Navigator.pushReplacementNamed(
+                  context,
+                  '/recipient-find-food',
+                ),
+          ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFFFF9E1B),
+              minimumSize: Size(double.infinity, 54),
+              textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+            icon: Icon(Icons.assignment, size: 26),
+            label: Text("My Requests"),
+            onPressed: () {
+              // Optionally, scroll to MyRequestsSection or navigate to a separate page
+              // For now, do nothing (section is below)
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -218,8 +327,8 @@ class _RecipientNotificationsPanel extends StatelessWidget {
       stream:
           FirebaseFirestore.instance
               .collection('users')
-              .doc(userId)
-              .collection('notifications')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .collection('requests')
               .orderBy('createdAt', descending: true)
               .limit(10)
               .snapshots(),
@@ -311,11 +420,12 @@ class _RecipientRequestsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return StreamBuilder<QuerySnapshot>(
       stream:
           FirebaseFirestore.instance
               .collection('requests')
-              .where('recipientUid', isEqualTo: userId)
+              .where('recipientUid', isEqualTo: user?.uid)
               .orderBy('createdAt', descending: true)
               .snapshots(),
       builder: (context, snapshot) {
